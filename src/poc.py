@@ -6,6 +6,7 @@ from langchain_core.tools import tool
 from langgraph.graph import StateGraph, START, END
 from langgraph.prebuilt import ToolNode
 from langchain_core.messages import SystemMessage
+import os
 
 # System Prompt
 system_message = SystemMessage(
@@ -61,14 +62,25 @@ workflow.add_edge("tools", "agent")
 
 app = workflow.compile()
 
+def speak(text):
+    print(f"Generiere Audio für: {text}...")
+    # 'aplay' ist der Standard-Player auf Linux, 'afplay' auf Mac
+    command = f'echo "{text}" | piper --model models/de_DE-thorsten-high.onnx --output_file response.wav && afplay response.wav'
+    os.system(command)
+
 if __name__ == "__main__":
     inputs = {"messages": [HumanMessage(content="Stell den Wecker auf 8 Uhr")]}
     
+    final_response = ""
+    
+    # Wir lassen den Graphen laufen
     for output in app.stream(inputs, stream_mode="values"):
         last_msg = output["messages"][-1]
         
-        if isinstance(last_msg, AIMessage):
-            if last_msg.tool_calls:
-                print(f"Tool-Aufruf: {last_msg.tool_calls[0]['name']}")
-            elif last_msg.content:
-                print(f"Ollama: {last_msg.content}")
+        if isinstance(last_msg, AIMessage) and last_msg.content:
+            final_response = last_msg.content
+            print(f"Ollama: {final_response}")
+
+    # --- JETZT KOMMT DAS TTS ---
+    if final_response:
+        speak(final_response)
