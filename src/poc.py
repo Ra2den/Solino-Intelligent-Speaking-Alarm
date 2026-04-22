@@ -8,6 +8,8 @@ from langgraph.prebuilt import ToolNode
 from langchain_core.messages import SystemMessage
 import os
 
+from speechToText import STTService
+
 # System Prompt
 system_message = SystemMessage(
     content="Du bist ein intelligenter Wecker. Wenn ein Tool-Ergebnis (z.B. vom Wecker stellen) vorliegt, "
@@ -68,19 +70,33 @@ def speak(text):
     command = f'echo "{text}" | piper --model models/de_DE-thorsten-high.onnx --output_file response.wav && afplay response.wav'
     os.system(command)
 
-if __name__ == "__main__":
-    inputs = {"messages": [HumanMessage(content="Stell den Wecker auf 8 Uhr")]}
-    
-    final_response = ""
-    
-    # Wir lassen den Graphen laufen
-    for output in app.stream(inputs, stream_mode="values"):
-        last_msg = output["messages"][-1]
-        
-        if isinstance(last_msg, AIMessage) and last_msg.content:
-            final_response = last_msg.content
-            print(f"Ollama: {final_response}")
+stt_service = STTService(model_size="base") 
 
-    # --- JETZT KOMMT DAS TTS ---
-    if final_response:
-        speak(final_response)
+if __name__ == "__main__":
+    # Schritt 1: Aufnahme
+    audio_file = stt_service.record_audio(duration=4)
+    
+    # Schritt 2: Sprache zu Text (STT)
+    user_text = stt_service.transcribe(audio_file)
+    print(f"🗣️ Erkannt: {user_text}")
+    
+    # Schritt 3: Nur weitermachen, wenn auch Text erkannt wurde
+    if user_text:
+        inputs = {"messages": [HumanMessage(content=user_text)]}
+        final_response = ""
+        
+        print("Überlege...")
+        # Wir lassen den LangGraph laufen
+        for output in app.stream(inputs, stream_mode="values"):
+            last_msg = output["messages"][-1]
+            
+            # Wir suchen die finale Antwort der KI
+            if isinstance(last_msg, AIMessage) and last_msg.content:
+                final_response = last_msg.content
+
+        # Schritt 4: Antwort ausgeben
+        if final_response:
+            print(f"Ollama: {final_response}")
+            speak(final_response)
+    else:
+        print("Empty input. Ich habe nichts gehört.")
