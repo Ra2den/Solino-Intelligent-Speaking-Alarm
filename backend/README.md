@@ -1,5 +1,4 @@
-# Solino-Intelligent-Speaking-Alarm
-
+# Backend
 ### setup :
 
 - access venv -> 
