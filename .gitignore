@@ -1,6 +1,10 @@
+#backend files
+
 models/
 venv/
 .venv/
 env/
+.env
 response.wav
 user_input.wav
+alarms.db

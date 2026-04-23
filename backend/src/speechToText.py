@@ -16,7 +16,7 @@ class STTService:
         self.rate = 16000
         self.chunk = 1024
 
-    def record_audio(self, duration=4, filename="user_input.wav"):
+    def record_audio(self, duration=6, filename="user_input.wav"):
         """Nimmt Audio mit PyAudio auf."""
         p = pyaudio.PyAudio()
         
