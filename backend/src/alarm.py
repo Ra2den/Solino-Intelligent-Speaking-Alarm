@@ -13,7 +13,7 @@ import threading
 from datetime import datetime
 
 from weatherForecast import get_current_weather
-from alarmDB import db_add_alarm, db_get_active_alarms, init_db, db_toggle_alarm
+from alarmDB import db_add_alarm, db_get_active_alarms, init_db, db_toggle_alarm, db_delete_alarm
 from speechToText import STTService
 
 # System Prompt
@@ -46,21 +46,9 @@ def list_alarms():
 @tool
 def remove_alarm_by_time(uhrzeit: str):
     """Löscht einen Wecker basierend auf der Uhrzeit (Format HH:MM)."""
-    conn = sqlite3.connect("alarms.db")
-    cursor = conn.cursor()
+    res = db_delete_alarm(uhrzeit)
+    return res
     
-    cursor.execute("SELECT id FROM alarms WHERE uhrzeit = ?", (uhrzeit,))
-    result = cursor.fetchone()
-    
-    if result:
-        alarm_id = result[0]
-        cursor.execute("DELETE FROM alarms WHERE id = ?", (alarm_id,))
-        conn.commit()
-        conn.close()
-        return f"Ich habe den Wecker für {uhrzeit} Uhr gelöscht."
-    else:
-        conn.close()
-        return f"Ich konnte keinen Wecker für {uhrzeit} Uhr finden."
 
 @tool
 def get_time_now():

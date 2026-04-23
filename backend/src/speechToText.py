@@ -20,7 +20,7 @@ class STTService:
         """Nimmt Audio mit PyAudio auf."""
         p = pyaudio.PyAudio()
         
-        print(f"🎤 Höre zu für {duration} Sekunden...")
+        print(f"Höre zu für {duration} Sekunden...")
         
         stream = p.open(format=self.format,
                         channels=self.channels,

@@ -65,3 +65,20 @@ def db_toggle_alarm(alarm_id, status=0):
     conn.commit()
     conn.close()
     return "Status aktualisiert."
+
+def db_delete_alarm(uhrzeit)
+    conn = sqlite3.connect("alarms.db")
+        cursor = conn.cursor()
+    
+        cursor.execute("SELECT id FROM alarms WHERE uhrzeit = ?", (uhrzeit,))
+        result = cursor.fetchone()
+    
+        if result:
+            alarm_id = result[0]
+            cursor.execute("DELETE FROM alarms WHERE id = ?", (alarm_id,))
+            conn.commit()
+            conn.close()
+            return f"Ich habe den Wecker für {uhrzeit} Uhr gelöscht."
+        else:
+            conn.close()
+            return f"Ich konnte keinen Wecker für {uhrzeit} Uhr finden."

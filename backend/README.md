@@ -26,3 +26,20 @@ curl -L https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/de/de_DE/thor
 # Download der JSON Datei
 curl -L https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/de/de_DE/thorsten/high/de_DE-thorsten-high.onnx.json?download=true -o de_DE-thorsten-high.onnx.json
 ``` 
+
+- add Weather-API-Key
+
+    create ```.env```-file
+
+    add:
+       
+        API_KEY= *enter api-key here*
+
+- install Portaudio on Mac
+    ```brew install portaudio```
+
+    (in venv): 
+    ```
+    export CFLAGS="-I$(brew --prefix portaudio)/include"
+    export LDFLAGS="-L$(brew --prefix portaudio)/lib"
+    pip install pyaudio```

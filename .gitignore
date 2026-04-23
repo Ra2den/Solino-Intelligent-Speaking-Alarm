@@ -33,3 +33,5 @@ env/
 response.wav
 user_input.wav
 alarms.db
+.DS_store
+
