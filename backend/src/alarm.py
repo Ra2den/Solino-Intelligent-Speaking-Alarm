@@ -6,11 +6,13 @@ from langchain_core.tools import tool
 from langgraph.graph import StateGraph, START, END
 from langgraph.prebuilt import ToolNode
 from langchain_core.messages import SystemMessage
+from langgraph.checkpoint.sqlite import SqliteSaver
 import os
 import datetime
 import time
 import threading
 from datetime import datetime
+import sqlite3
 
 from weatherForecast import get_current_weather
 from alarmDB import db_add_alarm, db_get_active_alarms, init_db, db_toggle_alarm, db_delete_alarm
@@ -150,46 +152,67 @@ def alarm_monitor():
         # Alle 10 Sekunden prüfen ist CPU-schonender und präzise genug
         time.sleep(10)
 stt_service = STTService(model_size="base") 
+checkpoint_conn = sqlite3.connect("checkpoints.db", check_same_thread=False)
+memory = SqliteSaver(checkpoint_conn)
+
+app = workflow.compile(checkpointer=memory)
+
+config = {"configurable": {"thread_id": "haupt_user_session"}}
+
 
 if __name__ == "__main__":
-
-
-    init_db()
+    # 1. Datenbanken initialisieren
+    init_db()  
     
+    # 2. Wecker-Monitor im Hintergrund starten
     monitor_thread = threading.Thread(target=alarm_monitor, daemon=True)
     monitor_thread.start()
 
-    # Schritt 1: Aufnahme
-    audio_file = stt_service.record_audio(duration=4)
-    
-    # Schritt 2: STT
-    user_text = stt_service.transcribe(audio_file)
-    print(f"Erkannt: {user_text}")
-    
-    # Schritt 3: Nur weitermachen, wenn auch Text erkannt wurde
-    if user_text:
-        inputs = {"messages": [HumanMessage(content=user_text)]}
-        final_response = ""
-        
-        print("Überlege...")
-        # Wir lassen den LangGraph laufen
-        for output in app.stream(inputs, stream_mode="values"):
-            last_msg = output["messages"][-1]
-            
-            # Wir suchen die finale Antwort der KI
-            if isinstance(last_msg, AIMessage) and last_msg.content:
-                final_response = last_msg.content
+    # 3. Session-Konfiguration 
+    config = {"configurable": {"thread_id": "User"}}
 
-        # Schritt 4: Antwort ausgeben
-        if final_response:
-            print(f"Ollama: {final_response}")
-            speak(final_response)
-    else:
-        print("Empty input. Ich habe nichts gehört.")
-    
-    print("\nBefehl verarbeitet. Monitor läuft weiter. (Strg+C zum Beenden)")
+    print("Susonne ist bereit und der Monitor läuft im Hintergrund.")
+    print("Stoppen mit Strg+C")
+
     try:
         while True:
-            time.sleep(1) 
+            print("\n" + "="*30)
+            print("Bereit für deine Frage.")
+            user_input = input("Drücke ENTER zum Sprechen (oder 'exit' zum Beenden): ")
+
+            if user_input.lower() == 'exit':
+                print("Susonne verabschiedet sich... Bis bald!")
+                break
+
+            # --- SCHRITT 1: Aufnahme ---
+            audio_file = stt_service.record_audio(duration=6)
+            
+            # --- SCHRITT 2: STT ---
+            user_text = stt_service.transcribe(audio_file)
+            print(f"Erkannt: {user_text}")
+            
+            # --- SCHRITT 3: Verarbeitung ---
+            if user_text.strip():
+                inputs = {"messages": [HumanMessage(content=user_text)]}
+                final_response = ""
+                
+                print("Susonne überlegt...")
+                
+                for output in app.stream(inputs, config=config, stream_mode="values"):
+                    if "messages" in output and output["messages"]:
+                        last_msg = output["messages"][-1]
+                        
+                        if isinstance(last_msg, AIMessage) and last_msg.content:
+                            final_response = last_msg.content
+
+                # --- SCHRITT 4: Antwort ausgeben & Sprechen ---
+                if final_response:
+                    print(f"Susonne: {final_response}")
+                    speak(final_response)
+                else:
+                    print("Keine Antwort von Susonne erhalten.")
+            else:
+                print("Ich habe nichts gehört. Bitte versuch es nochmal.")
+
     except KeyboardInterrupt:
-        print("Wecker wird ausgeschaltet...")
+        print("\nProgramm beendet. Wecker-Monitor wird gestoppt...")
