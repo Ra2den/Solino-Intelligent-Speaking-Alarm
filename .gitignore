@@ -1,4 +1,6 @@
 models/
 venv/
+.venv/
+env/
 response.wav
 user_input.wav
