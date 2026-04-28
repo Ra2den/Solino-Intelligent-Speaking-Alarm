@@ -35,3 +35,5 @@ user_input.wav
 alarms.db
 .DS_store
 
+### pycache
+__pycache__/
