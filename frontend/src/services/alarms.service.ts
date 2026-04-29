@@ -8,8 +8,10 @@ export class AlarmsService {
   static async getAlarms(): Promise<Alarm[]> {
     try {
       return await apiClient.get(this.baseUrl);
-    } catch (err: any) {
-      console.error("alarms.getAlarms error:", err.message);
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        console.error("alarms.getAlarms error:", err.message);
+      }
       throw err;
     }
   }
@@ -18,8 +20,10 @@ export class AlarmsService {
   static async getActiveAlarms(): Promise<Alarm[]> {
     try {
       return await apiClient.get(`${this.baseUrl}/active`);
-    } catch (err: any) {
-      console.error("alarms.getActiveAlarms error:", err.message);
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        console.error("alarms.getActiveAlarms error:", err.message);
+      }
       throw err;
     }
   }
@@ -27,8 +31,10 @@ export class AlarmsService {
   static async getAlarm(id: number): Promise<Alarm> {
     try {
       return await apiClient.get(`${this.baseUrl}/${id}`);
-    } catch (err: any) {
-      console.error("alarms.getAlarm error:", err.message);
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        console.error("alarms.getAlarm error:", err.message);
+      }
       throw err;
     }
   }
@@ -37,8 +43,10 @@ export class AlarmsService {
   static async createAlarm(alarm: Partial<Alarm>): Promise<Alarm> {
     try {
       return await apiClient.post(this.baseUrl, alarm);
-    } catch (err: any) {
-      console.error("alarms.createAlarm error:", err.message);
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        console.error("alarms.createAlarm error:", err.message);
+      }
       throw err;
     }
   }
@@ -47,8 +55,10 @@ export class AlarmsService {
   static async toggleAlarm(id: number): Promise<Alarm> {
     try {
       return await apiClient.get(`${this.baseUrl}/${id}/toggle`);
-    } catch (err: any) {
-      console.error("alarms.toggleAlarm error:", err.message);
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        console.error("alarms.toggleAlarm error:", err.message);
+      }
       throw err;
     }
   }
@@ -57,8 +67,10 @@ export class AlarmsService {
   static async updateAlarm(id: number, alarm: Partial<Alarm>): Promise<Alarm> {
     try {
       return await apiClient.put(`${this.baseUrl}/${id}`, alarm);
-    } catch (err: any) {
-      console.error("alarms.updateAlarm error:", err.message);
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        console.error("alarms.updateAlarm error:", err.message);
+      }
       throw err;
     }
   }
@@ -67,8 +79,10 @@ export class AlarmsService {
   static async deleteAlarm(id: number): Promise<void> {
     try {
       await apiClient.delete(`${this.baseUrl}/${id}`);
-    } catch (err: any) {
-      console.error("alarms.deleteAlarm error:", err.message);
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        console.error("alarms.deleteAlarm error:", err.message);
+      }
       throw err;
     }
   }
