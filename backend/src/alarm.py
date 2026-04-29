@@ -100,6 +100,7 @@ def speak(text):
     print(f"Generiere Audio für: {text}...")
     # 'aplay' ist der Standard-Player auf Linux, 'afplay' auf Mac
     command = f'echo "{text}" | piper --model models/de_DE-thorsten-high.onnx --output_file response.wav && afplay response.wav'
+    # command = f'echo "{text}" | piper --model models/de_DE-thorsten-high.onnx --output_file response.wav && aplay -D plughw:CARD=Headset response.wav'
     os.system(command)
 
 def alarm_monitor():
