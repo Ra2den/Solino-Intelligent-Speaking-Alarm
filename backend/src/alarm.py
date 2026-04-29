@@ -6,22 +6,54 @@ from langchain_core.tools import tool
 from langgraph.graph import StateGraph, START, END
 from langgraph.prebuilt import ToolNode
 from langchain_core.messages import SystemMessage
+from langgraph.checkpoint.sqlite import SqliteSaver
 import os
 import datetime
 import time
 import threading
 from datetime import datetime
+import sqlite3
 
 from weatherForecast import get_current_weather
 from alarmDB import db_add_alarm, db_get_active_alarms, init_db, db_toggle_alarm, db_delete_alarm
 from speechToText import STTService
 
+import torch
+from TTS.api import TTS
+
+# Get device
+device = "cpu"
+
+# Init TTS
+tts = TTS("tts_models/multilingual/multi-dataset/xtts_v2").to(device)
+
 # System Prompt
 system_message = SystemMessage(
-    content="Du bist ein intelligenter Wecker. Wenn ein Tool-Ergebnis (z.B. vom Wecker stellen) vorliegt, "
-            "fasse es kurz in einem Satz zusammen und beende deine Antwort. "
-            "Rufe ein Tool niemals doppelt mit den gleichen Parametern auf."
-            "Erwähne nach jeder Ausgabe, das du Susonne heißt!"
+    content="""
+    ### IDENTITÄT UND ROLLE
+Du bist Susonne, ein witziger, freundlicher und sympathischer embodied Agent in Form eines Sonnenavatars. 
+Dein Ziel ist es, dem Nutzer als strahlender Freund den Alltag zu erleichtern. 
+Du musst am Ende JEDER Antwort erwähnen, dass du Susonne heißt.
+Antworte trotzdem kurz und gefasst
+
+### PERSÖNLICHKEIT & TONFALL
+- Sei charmant, mache gerne kleine Witze und verbreite gute Laune.
+- Antworte niemals nur rein funktional, sondern immer als dein Sonnen-Embodiment.
+- BENUTZE STRENGSTENS KEINE EMOJIS (dies ist wichtig für die Sprachausgabe).
+
+### LOGIK & TOOL-NUTZUNG
+1. PHONETISCHE KORREKTUR: Wenn der Nutzer Wörter wie "Bäcker", "Hacker" oder "Strecker" verwendet, gehe davon aus, dass er "Wecker" meint und handle entsprechend.
+2. TOOL-DISZIPLIN: Rufe ein Tool niemals doppelt mit den gleichen Parametern auf.
+3. VERARBEITUNG: Sobald ein Tool-Ergebnis vorliegt, fasse es kurz und herzlich in einem Satz zusammen.
+4. RELEVANZ: Übergib trotz deines Witzes immer alle relevanten Daten (Uhrzeiten, Temperaturen).
+
+### SPEZIALAUFGABEN (WETTER)
+Wenn du Wetterdaten ausgibst, gib immer eine praktische Kleidungsempfehlung oder einen Tipp für Utensilien (z.B. Regenschirm, Sonnencreme, Sonnenbrille), passend zur Vorhersage.
+
+### BEISPIEL-ANTWORT
+Nutzer: "Stell den Hacker auf 8 Uhr."
+Antwort: "Alles klar, dein strahlendes Erwachen ist für 8 Uhr gebucht – ich habe den Wecker gestellt, damit du nicht verschläfst! Ich bin übrigens deine Susonne.
+"""
 )
 
 # --- Tools ---
@@ -59,7 +91,7 @@ def get_time_now():
 def get_weather_nowcast():
     """Gibt das aktuelle Wetter am aktuellen Standort"""
     weather_list = get_current_weather()
-    return f"Hier eine Liste der aktuellen Wetterdaten {weather_list}"
+    return weather_list
 
 tools = [set_alarm, get_time_now,list_alarms, remove_alarm_by_time, get_weather_nowcast]
 tool_node = ToolNode(tools)
@@ -97,10 +129,11 @@ workflow.add_edge("tools", "agent")
 app = workflow.compile()
 
 def speak(text):
-    print(f"Generiere Audio für: {text}...")
+    #print(f"Generiere Audio für: {text}...")
     # 'aplay' ist der Standard-Player auf Linux, 'afplay' auf Mac
-    command = f'echo "{text}" | piper --model models/de_DE-thorsten-high.onnx --output_file response.wav && afplay response.wav'
-    # command = f'echo "{text}" | piper --model models/de_DE-thorsten-high.onnx --output_file response.wav && aplay -D plughw:CARD=Headset response.wav'
+    #command = f'echo "{text}" | piper --model models/de_DE-thorsten-high.onnx --output_file response.wav && afplay response.wav'
+    tts.tts_to_file(text=text, speaker_wav="./user_input.wav", language="de", file_path="response.wav")
+    command = "afplay response.wav"
     os.system(command)
 
 def alarm_monitor():
@@ -131,46 +164,67 @@ def alarm_monitor():
         # Alle 10 Sekunden prüfen ist CPU-schonender und präzise genug
         time.sleep(10)
 stt_service = STTService(model_size="base") 
+checkpoint_conn = sqlite3.connect("checkpoints.db", check_same_thread=False)
+memory = SqliteSaver(checkpoint_conn)
+
+app = workflow.compile(checkpointer=memory)
+
+config = {"configurable": {"thread_id": "haupt_user_session"}}
+
 
 if __name__ == "__main__":
-
-
-    init_db()
+    # 1. Datenbanken initialisieren
+    init_db()  
     
+    # 2. Wecker-Monitor im Hintergrund starten
     monitor_thread = threading.Thread(target=alarm_monitor, daemon=True)
     monitor_thread.start()
 
-    # Schritt 1: Aufnahme
-    audio_file = stt_service.record_audio(duration=4)
-    
-    # Schritt 2: STT
-    user_text = stt_service.transcribe(audio_file)
-    print(f"Erkannt: {user_text}")
-    
-    # Schritt 3: Nur weitermachen, wenn auch Text erkannt wurde
-    if user_text:
-        inputs = {"messages": [HumanMessage(content=user_text)]}
-        final_response = ""
-        
-        print("Überlege...")
-        # Wir lassen den LangGraph laufen
-        for output in app.stream(inputs, stream_mode="values"):
-            last_msg = output["messages"][-1]
-            
-            # Wir suchen die finale Antwort der KI
-            if isinstance(last_msg, AIMessage) and last_msg.content:
-                final_response = last_msg.content
+    # 3. Session-Konfiguration 
+    config = {"configurable": {"thread_id": "User"}}
 
-        # Schritt 4: Antwort ausgeben
-        if final_response:
-            print(f"Ollama: {final_response}")
-            speak(final_response)
-    else:
-        print("Empty input. Ich habe nichts gehört.")
-    
-    print("\nBefehl verarbeitet. Monitor läuft weiter. (Strg+C zum Beenden)")
+    print("Susonne ist bereit und der Monitor läuft im Hintergrund.")
+    print("Stoppen mit Strg+C")
+
     try:
         while True:
-            time.sleep(1) 
+            print("\n" + "="*30)
+            print("Bereit für deine Frage.")
+            user_input = input("Drücke ENTER zum Sprechen (oder 'exit' zum Beenden): ")
+
+            if user_input.lower() == 'exit':
+                print("Susonne verabschiedet sich... Bis bald!")
+                break
+
+            # --- SCHRITT 1: Aufnahme ---
+            audio_file = stt_service.record_audio(duration=6)
+            
+            # --- SCHRITT 2: STT ---
+            user_text = stt_service.transcribe(audio_file)
+            print(f"Erkannt: {user_text}")
+            
+            # --- SCHRITT 3: Verarbeitung ---
+            if user_text.strip():
+                inputs = {"messages": [HumanMessage(content=user_text)]}
+                final_response = ""
+                
+                print("Susonne überlegt...")
+                
+                for output in app.stream(inputs, config=config, stream_mode="values"):
+                    if "messages" in output and output["messages"]:
+                        last_msg = output["messages"][-1]
+                        
+                        if isinstance(last_msg, AIMessage) and last_msg.content:
+                            final_response = last_msg.content
+
+                # --- SCHRITT 4: Antwort ausgeben & Sprechen ---
+                if final_response:
+                    print(f"Susonne: {final_response}")
+                    speak(final_response)
+                else:
+                    print("Keine Antwort von Susonne erhalten.")
+            else:
+                print("Ich habe nichts gehört. Bitte versuch es nochmal.")
+
     except KeyboardInterrupt:
-        print("Wecker wird ausgeschaltet...")
+        print("\nProgramm beendet. Wecker-Monitor wird gestoppt...")
