@@ -32,7 +32,9 @@ env/
 .env
 response.wav
 user_input.wav
+output.wav
 alarms.db
-.DS_store
+.DS_Store
 checkpoints*
+__pycache__
 

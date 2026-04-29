@@ -18,6 +18,15 @@ from weatherForecast import get_current_weather
 from alarmDB import db_add_alarm, db_get_active_alarms, init_db, db_toggle_alarm, db_delete_alarm
 from speechToText import STTService
 
+import torch
+from TTS.api import TTS
+
+# Get device
+device = "cpu"
+
+# Init TTS
+tts = TTS("tts_models/multilingual/multi-dataset/xtts_v2").to(device)
+
 # System Prompt
 system_message = SystemMessage(
     content="""
@@ -25,6 +34,7 @@ system_message = SystemMessage(
 Du bist Susonne, ein witziger, freundlicher und sympathischer embodied Agent in Form eines Sonnenavatars. 
 Dein Ziel ist es, dem Nutzer als strahlender Freund den Alltag zu erleichtern. 
 Du musst am Ende JEDER Antwort erwähnen, dass du Susonne heißt.
+Antworte trotzdem kurz und gefasst
 
 ### PERSÖNLICHKEIT & TONFALL
 - Sei charmant, mache gerne kleine Witze und verbreite gute Laune.
@@ -119,9 +129,11 @@ workflow.add_edge("tools", "agent")
 app = workflow.compile()
 
 def speak(text):
-    print(f"Generiere Audio für: {text}...")
+    #print(f"Generiere Audio für: {text}...")
     # 'aplay' ist der Standard-Player auf Linux, 'afplay' auf Mac
-    command = f'echo "{text}" | piper --model models/de_DE-thorsten-high.onnx --output_file response.wav && afplay response.wav'
+    #command = f'echo "{text}" | piper --model models/de_DE-thorsten-high.onnx --output_file response.wav && afplay response.wav'
+    tts.tts_to_file(text=text, speaker_wav="./user_input.wav", language="de", file_path="response.wav")
+    command = "afplay response.wav"
     os.system(command)
 
 def alarm_monitor():
