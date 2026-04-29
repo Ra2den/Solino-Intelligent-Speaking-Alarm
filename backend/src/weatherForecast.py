@@ -63,7 +63,7 @@ def fetch_and_parse_weather_nowcast(cords):
         weather_cond_main = data['weather'][0]['main']
         weather_cond_description = data['weather'][0]['description']
 
-        wind_speed = data['wind']['speed']
+        wind_speed = convert_ms_to_kmh(data['wind']['speed'])
         wind_direction = deg_to_compass(data['wind']['deg'])
 
         weather_nowcaset_string = (
@@ -109,6 +109,9 @@ def get_weather_forecast_from_specific_location(location_name, location_region):
 
 def convert_celvin_to_celcius(deg_kelvin):
     return deg_kelvin - 273.15
+
+def convert_ms_to_kmh(ms):
+    return ms * 3.6
 
 def deg_to_compass(deg):
     directions = ['Norden', 'Nord-Nord-Ost', 'Nord-Ost', 'Ost-Nord-Ost', 
