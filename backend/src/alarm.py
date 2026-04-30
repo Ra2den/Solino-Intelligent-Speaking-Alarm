@@ -15,7 +15,7 @@ from datetime import datetime
 import sqlite3
 
 from weatherForecast import get_current_weather, get_current_weather_from_specific_location
-from alarmDB import db_add_alarm, db_get_active_alarms, init_db, db_toggle_alarm, db_delete_alarm
+from ai_db_service import add_alarm, get_active_alarms, toggle_alarm, delete_alarm_by_time
 from speechToText import STTService
 
 
@@ -52,13 +52,13 @@ Antwort: "Alles klar, dein strahlendes Erwachen ist für 8 Uhr gebucht – ich h
 @tool
 def set_alarm(uhrzeit: str):
     """Stellt einen Wecker für eine bestimmte Uhrzeit (Format HH:MM)."""
-    db_add_alarm(uhrzeit, "Vom LLM gestellt")
+    add_alarm(uhrzeit, "Vom LLM gestellt")
     return f"Wecker auf {uhrzeit} Uhr programmiert."
 
 @tool
 def list_alarms():
     """Gibt eine Liste aller aktuell gestellten Wecker zurück."""
-    active_alarms = db_get_active_alarms()
+    active_alarms = get_active_alarms()
     if not active_alarms:
         return "Du hast aktuell keine aktiven Wecker."
     
@@ -70,7 +70,7 @@ def list_alarms():
 @tool
 def remove_alarm_by_time(uhrzeit: str):
     """Löscht einen Wecker basierend auf der Uhrzeit (Format HH:MM)."""
-    res = db_delete_alarm(uhrzeit)
+    res = delete_alarm_by_time(uhrzeit)
     return res
     
 
@@ -142,15 +142,16 @@ def alarm_monitor():
         
         # Nur prüfen, wenn wir in einer neuen Minute sind
         if now_time != last_triggered_minute:
-            active_alarms = db_get_active_alarms()
+            active_alarms = get_active_alarms()
             
             for alarm in active_alarms:
-                if alarm['uhrzeit'] == now_time:
+                if alarm['time'] == now_time:
                     print(f"!!! ALARM !!! Es ist {now_time} Uhr!")
                     
                     os.system("afplay alarm_sound.mp3") 
                     
-                    db_toggle_alarm(alarm['id'], status=0)
+                    # Status in DB aktualisieren
+                    toggle_alarm(alarm['id'])
                     
                     last_triggered_minute = now_time
         
@@ -172,9 +173,6 @@ config = {"configurable": {"thread_id": "haupt_user_session"}}
 
 
 if __name__ == "__main__":
-    # 1. Datenbanken initialisieren
-    init_db()  
-    
     # 2. Wecker-Monitor im Hintergrund starten
     monitor_thread = threading.Thread(target=alarm_monitor, daemon=True)
     monitor_thread.start()
