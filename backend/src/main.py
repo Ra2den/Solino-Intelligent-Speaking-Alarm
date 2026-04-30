@@ -1,15 +1,10 @@
 import threading
-from alarmDB import init_db
 from alarm import alarm_monitor, interact
 
-# 1. Datenbanken initialisieren
-init_db()  
 
-# 2. Wecker-Monitor im Hintergrund starten
 monitor_thread = threading.Thread(target=alarm_monitor, daemon=True)
 monitor_thread.start()
 
-# 3. Session-Konfiguration 
 print("Susonne ist bereit und der Monitor läuft im Hintergrund.")
 print("Stoppen mit Strg+C")
 
