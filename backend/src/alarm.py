@@ -203,6 +203,7 @@ def wake_up(time, alarm_label=""):
     print("Wecker ausgelöst. Susonne bereitet den Tag vor...")
 
     ai_output(inputs=inputs, config=config)
+    return
 
 def interact():
 
@@ -243,6 +244,8 @@ def ai_output(inputs, config):
         speak(final_response)
     else:
         print("Keine Antwort von Susonne erhalten.")
+    
+    return
     
 if __name__ == '__main__':
    pass
