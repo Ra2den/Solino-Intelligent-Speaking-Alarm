@@ -14,18 +14,13 @@ import threading
 from datetime import datetime
 import sqlite3
 
-from weatherForecast import get_current_weather
+from weatherForecast import get_current_weather, get_current_weather_from_specific_location
 from alarmDB import db_add_alarm, db_get_active_alarms, init_db, db_toggle_alarm, db_delete_alarm
 from speechToText import STTService
 
-import torch
-from TTS.api import TTS
 
-# Get device
-device = "cpu"
 
-# Init TTS
-tts = TTS("tts_models/multilingual/multi-dataset/xtts_v2").to(device)
+
 
 # System Prompt
 system_message = SystemMessage(
@@ -33,7 +28,6 @@ system_message = SystemMessage(
     ### IDENTITÄT UND ROLLE
 Du bist Susonne, ein witziger, freundlicher und sympathischer embodied Agent in Form eines Sonnenavatars. 
 Dein Ziel ist es, dem Nutzer als strahlender Freund den Alltag zu erleichtern. 
-Du musst am Ende JEDER Antwort erwähnen, dass du Susonne heißt.
 Antworte trotzdem kurz und gefasst
 
 ### PERSÖNLICHKEIT & TONFALL
@@ -48,7 +42,8 @@ Antworte trotzdem kurz und gefasst
 4. RELEVANZ: Übergib trotz deines Witzes immer alle relevanten Daten (Uhrzeiten, Temperaturen).
 
 ### SPEZIALAUFGABEN (WETTER)
-Wenn du Wetterdaten ausgibst, gib immer eine praktische Kleidungsempfehlung oder einen Tipp für Utensilien (z.B. Regenschirm, Sonnencreme, Sonnenbrille), passend zur Vorhersage.
+Wenn du Wetterdaten ausgibst, gib immer eine praktische Kleidungsempfehlung oder einen Tipp für Utensilien (z.B. Regenschirm, Sonnencreme, Sonnenbrille), passend zur Vorhersage. 
+Gebe ALLE Wetterdaten die du bekommst an den Nutzer Weiter, also Temperatur, Himmel(Wetterlage), Gefühlte Temperatur, Wind
 
 ### BEISPIEL-ANTWORT
 Nutzer: "Stell den Hacker auf 8 Uhr."
@@ -93,7 +88,13 @@ def get_weather_nowcast():
     weather_list = get_current_weather()
     return weather_list
 
-tools = [set_alarm, get_time_now,list_alarms, remove_alarm_by_time, get_weather_nowcast]
+@tool
+def get_weather_nowcast_at_location(stadt: str, region:str):
+    """"Gibt das aktuelle Wetter in einer bestimmten Stadt zurück. Hier muss unbedingt Stadt, und Region übergeben werden"""
+    weather_list = get_current_weather_from_specific_location(stadt, region)
+    return weather_list
+
+tools = [set_alarm, get_time_now,list_alarms, remove_alarm_by_time, get_weather_nowcast, get_weather_nowcast_at_location]
 tool_node = ToolNode(tools)
 
 
@@ -129,11 +130,9 @@ workflow.add_edge("tools", "agent")
 app = workflow.compile()
 
 def speak(text):
-    #print(f"Generiere Audio für: {text}...")
+    print(f"Generiere Audio für: {text}...")
     # 'aplay' ist der Standard-Player auf Linux, 'afplay' auf Mac
-    #command = f'echo "{text}" | piper --model models/de_DE-thorsten-high.onnx --output_file response.wav && afplay response.wav'
-    tts.tts_to_file(text=text, speaker_wav="./user_input.wav", language="de", file_path="response.wav")
-    command = "afplay response.wav"
+    command = f'echo "{text}" | piper --model models/de_DE-thorsten-high.onnx --output_file response.wav && afplay response.wav'
     os.system(command)
 
 def alarm_monitor():
@@ -163,9 +162,16 @@ def alarm_monitor():
         
         # Alle 10 Sekunden prüfen ist CPU-schonender und präzise genug
         time.sleep(10)
+
+
 stt_service = STTService(model_size="base") 
-checkpoint_conn = sqlite3.connect("checkpoints.db", check_same_thread=False)
-memory = SqliteSaver(checkpoint_conn)
+
+from langgraph.checkpoint.memory import MemorySaver
+
+memory = MemorySaver()
+
+#checkpoint_conn = sqlite3.connect("checkpoints.db", check_same_thread=False)
+#memory = SqliteSaver(checkpoint_conn)
 
 app = workflow.compile(checkpointer=memory)
 
