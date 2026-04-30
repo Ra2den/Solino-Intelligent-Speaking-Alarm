@@ -32,20 +32,27 @@ class Database:
 
     def execute(self, query, params=()):
         with self._connect() as conn:
-            conn.execute(query, params)
+            cursor = conn.execute(query, params)
+            return cursor.lastrowid
 
     def fetch_all(self, query, params=()):
         with self._connect() as conn:
             cursor = conn.execute(query, params)
-            return cursor.fetchall()
+            rows = cursor.fetchall()
+            return [dict(row) for row in rows]
 
     def fetch_one(self, query, params=()):
         with self._connect() as conn:
             cursor = conn.execute(query, params)
-            return cursor.fetchone()
+            row = cursor.fetchone()
+            return dict(row) if row else None
 
 def db_add_alarm(time, label):
-    return db.execute("INSERT INTO alarms (time, label) VALUES (?, ?)", (time, label))
+    alarm_id = db.execute(
+        "INSERT INTO alarms (time, label, active) VALUES (?, ?, 1)",
+        (time, label)
+    )
+    return db.fetch_one("SELECT * FROM alarms WHERE id = ?", (alarm_id,))
     
 def db_get_all_alarms():
     return db.fetch_all("SELECT * FROM alarms")
@@ -60,27 +67,25 @@ def db_get_alarm_by_id(alarm_id):
     return db.fetch_one("SELECT * FROM alarms WHERE id = ?", (alarm_id,))
 
 def db_delete_alarm_by_id(alarm_id):
+    alarm = db.fetch_one("SELECT * FROM alarms WHERE id = ?", (alarm_id,))
+    if not alarm:
+        return None
     db.execute("DELETE FROM alarms WHERE id = ?", (alarm_id,))
+    return alarm
 
 def db_toggle_alarm(alarm_id):
     db.execute(
         "UPDATE alarms SET active = NOT active WHERE id = ?",
         (alarm_id,)
     )
-    return db.fetch_one(
-        "SELECT * FROM alarms WHERE id = ?",
-        (alarm_id,)
-    )
+    return db.fetch_one("SELECT * FROM alarms WHERE id = ?", (alarm_id,))
 
 def db_delete_alarm_by_time(time):
-    result = db.fetch_one("SELECT id FROM alarms WHERE time = ?", (time,))
-
-    if not result:
-        return False
-
-    alarm_id = result["id"]
-    db.execute("DELETE FROM alarms WHERE id = ?", (alarm_id,))
-    return True
+    alarm = db.fetch_one("SELECT * FROM alarms WHERE time = ?", (time,))
+    if not alarm:
+        return None
+    db.execute("DELETE FROM alarms WHERE id = ?", (alarm["id"],))
+    return alarm
 
 def db_update_alarm(alarm_id, time=None, label=None):
     fields = []
