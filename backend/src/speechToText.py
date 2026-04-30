@@ -2,6 +2,8 @@ import wave
 import pyaudio
 import os
 from faster_whisper import WhisperModel
+import struct
+import math
 
 class STTService:
     def __init__(self, model_size="base"):
@@ -17,11 +19,7 @@ class STTService:
         self.chunk = 1024
 
     def record_audio(self, duration=6, filename="user_input.wav"):
-        """Nimmt Audio mit PyAudio auf."""
         p = pyaudio.PyAudio()
-        
-        print(f"Höre zu für {duration} Sekunden...")
-        
         stream = p.open(format=self.format,
                         channels=self.channels,
                         rate=self.rate,
@@ -29,20 +27,36 @@ class STTService:
                         frames_per_buffer=self.chunk)
 
         frames = []
+        print(f"Höre zu... ")
 
-        # Aufnahme-Loop
-        for _ in range(0, int(self.rate / self.chunk * duration)):
+        audio_break = 0
+
+        while(audio_break < 15):
             data = stream.read(self.chunk)
             frames.append(data)
+            
+            count = len(data) / 2
+            format_string = "%dh" % count
+            shorts = struct.unpack(format_string, data)
+            
+            sum_squares = sum(s**2 for s in shorts)
+            rms = math.sqrt(sum_squares / count)
+            
+            
+            level = int((rms / 32768.0) * 300) 
+            print(f"LEVEL : {level}")
+            if level <= 2:
+                audio_break = audio_break + 1
+            else:
+                audio_break = 0
+            print(f"BREAK : {audio_break}")
 
-        print("Aufnahme beendet.")
-
-        # Stream stoppen und schließen
+        print("\nAufnahme beendet.")
+        
         stream.stop_stream()
         stream.close()
         p.terminate()
 
-        # Als WAV speichern
         wf = wave.open(filename, 'wb')
         wf.setnchannels(self.channels)
         wf.setsampwidth(p.get_sample_size(self.format))

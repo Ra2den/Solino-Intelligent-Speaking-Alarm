@@ -20,9 +20,6 @@ from speechToText import STTService
 
 
 
-
-
-# System Prompt
 system_message = SystemMessage(
     content="""
     ### IDENTITÄT UND ROLLE
@@ -137,7 +134,7 @@ def speak(text):
 
 def alarm_monitor():
     print("Wecker-Monitor aktiv und wartet...")
-    last_triggered_minute = "" # Verhindert, dass der Wecker 60x in einer Minute klingelt
+    last_triggered_minute = ""
 
     while True:
         now_dt = datetime.now()
@@ -151,16 +148,12 @@ def alarm_monitor():
                 if alarm['uhrzeit'] == now_time:
                     print(f"!!! ALARM !!! Es ist {now_time} Uhr!")
                     
-                    # Sound abspielen
                     os.system("afplay alarm_sound.mp3") 
                     
-                    # Status in DB aktualisieren
                     db_toggle_alarm(alarm['id'], status=0)
                     
-                    # Diese Minute als "erledigt" markieren
                     last_triggered_minute = now_time
         
-        # Alle 10 Sekunden prüfen ist CPU-schonender und präzise genug
         time.sleep(10)
 
 
