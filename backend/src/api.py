@@ -3,6 +3,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from typing import Optional, List
 import db
 from schemas.alarm import Alarm, AlarmCreate
+from schemas.weather import WeatherNowcast, WeatherForecast, Sunrise, Sunset
+import weatherForecast
 
 app = FastAPI()
 
@@ -59,4 +61,24 @@ def update_alarm(alarm_id: int, alarm: Alarm):
 def delete_alarm(alarm_id: int):
     return db.db_delete_alarm_by_id(alarm_id)
 # --- Weather Endpoint ---
-# TODO Weather Endpoints
+
+# Fetch current weather as a WeatherNowcast object
+# weather_conditions: ['clear sky', 'few clouds', 'scattered clouds', 'broken clouds', 'shower rain', 'rain', 'thunderstorm', 'snow', 'mist']
+@app.get("/weather/nowcast")
+def get_weather_nowcast():
+    return weatherForecast.get_current_weather_for_api()
+
+# Fetch weather forecast for the next 5 days in 3 hour intervalls
+@app.get("/weather/forecast")
+def get_weather_forecast():
+    return weatherForecast.get_weather_forecast_for_api()
+
+# Fetch time of todays sunrise
+@app.get("/weather/sunrise")
+def get_sunrise_time():
+    return weatherForecast.get_sunrise_time()
+
+# Fetch time of todays sunfall
+@app.get("/weather/sunset")
+def get_sunset_time():
+    return weatherForecast.get_sunset_time()
