@@ -12,11 +12,16 @@ import datetime
 import time
 from datetime import datetime
 import sqlite3
+import json
 
 from weatherForecast import get_current_weather, get_current_weather_from_specific_location
 from alarmDB import db_add_alarm, db_get_active_alarms, init_db, db_toggle_alarm, db_delete_alarm
 from speechToText import STTService
 
+with open('settings.json', 'r') as file:
+    settings = json.load(file)
+if settings:
+    speaker = settings["speaker"]
 
 
 system_message = SystemMessage(
@@ -43,7 +48,7 @@ Gebe ALLE Wetterdaten die du bekommst an den Nutzer Weiter, also Temperatur, Him
 
 ### BEISPIEL-ANTWORT
 Nutzer: "Stell den Hacker auf 8 Uhr."
-Antwort: "Alles klar, dein strahlendes Erwachen ist für 8 Uhr gebucht – ich habe den Wecker gestellt, damit du nicht verschläfst! Ich bin übrigens deine Susonne.
+Antwort: "Alles klar, dein strahlendes Erwachen ist für 8 Uhr gebucht – ich habe den Wecker gestellt, damit du nicht verschläfst!
 """
 )
 
@@ -143,7 +148,12 @@ config = {"configurable": {"thread_id": "haupt_user_session"}}
 def speak(text):
     #print(f"Generiere Audio für: {text}...")
     # 'aplay' ist der Standard-Player auf Linux, 'afplay' auf Mac
-    command = f'echo "{text}" | piper --model models/de_DE-thorsten-high.onnx --output_file response.wav && afplay response.wav'
+    if speaker == "male":
+        model = "--model models/de_DE-thorsten-high.onnx"
+    else:
+        model = "--model models/de_DE-kerstin-low.onnx"
+        
+    command = f'echo "{text}" | piper {model} --output_file response.wav && afplay response.wav'
     os.system(command)
 
 def alarm_monitor():
