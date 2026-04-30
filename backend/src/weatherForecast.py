@@ -66,8 +66,8 @@ def fetch_and_parse_weather_nowcast(cords):
     if data == NO_WEATHER_ERROR_MSG:
         return data
 
-    curr_temp = convert_celvin_to_celcius(data['main']['temp'])
-    fells_like = convert_celvin_to_celcius(data['main']['feels_like'])
+    curr_temp = convert_kelvin_to_celsius(data['main']['temp'])
+    fells_like = convert_kelvin_to_celsius(data['main']['feels_like'])
 
     weather_cond_main = data['weather'][0]['main']
     weather_cond_description = data['weather'][0]['description']
@@ -93,8 +93,8 @@ def get_current_weather_for_api():
 
     weather_nowcast_data = WeatherNowcast(
         time = convert_timestamp_to_iso(data['dt']),
-        temperature = round_half_up(convert_celvin_to_celcius(data['main']['temp'])),
-        feels_like = round_half_up(convert_celvin_to_celcius(data['main']['feels_like'])),
+        temperature = round_half_up(convert_kelvin_to_celsius(data['main']['temp'])),
+        feels_like = round_half_up(convert_kelvin_to_celsius(data['main']['feels_like'])),
         weather_condition = data['weather'][0]['main'],
         weather_description = data['weather'][0]['description']
     )
@@ -144,8 +144,8 @@ def get_weather_forecast_for_api():
     for weather_data in data['list']:
         weather_nowcast_data = WeatherNowcast(
             time=convert_timestamp_to_iso(weather_data['dt']),
-            temperature=round_half_up(convert_celvin_to_celcius(weather_data['main']['temp'])),
-            feels_like=round_half_up(convert_celvin_to_celcius(weather_data['main']['feels_like'])),
+            temperature=round_half_up(convert_kelvin_to_celsius(weather_data['main']['temp'])),
+            feels_like=round_half_up(convert_kelvin_to_celsius(weather_data['main']['feels_like'])),
             weather_condition=weather_data['weather'][0]['main'],
             weather_description=weather_data['weather'][0]['description']
         )
@@ -189,7 +189,7 @@ def get_sunset_time():
 
 # --- convert data from openweathermap API to useful formatted data ---
 
-def convert_celvin_to_celcius(deg_kelvin):
+def convert_kelvin_to_celsius(deg_kelvin):
     return deg_kelvin - 273.15
 
 def convert_ms_to_kmh(ms):
