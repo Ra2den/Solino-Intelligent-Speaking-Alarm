@@ -44,12 +44,11 @@ class STTService:
             
             
             level = int((rms / 32768.0) * 300) 
-            print(f"LEVEL : {level}")
-            if level <= 2:
+            if level <= 1:
                 audio_break = audio_break + 1
             else:
                 audio_break = 0
-            print(f"BREAK : {audio_break}")
+            print(f"LEVEL : {level} BREAK : {audio_break}")
 
         print("\nAufnahme beendet.")
         

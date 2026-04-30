@@ -8,8 +8,6 @@
 
 - Deactivate Alarm via pressure plates
 
-- get weather for city in ai part
-
 - Penedrantes Klingeln kommt erst später -> erst Susonne
 
 ### Connectivity
