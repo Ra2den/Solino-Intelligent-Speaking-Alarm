@@ -21,7 +21,8 @@ export function Agent() {
   initInfiniteRotationRing();
   return (
     <>
-      <div className="relative bg-blue-100 w-full h-full">
+      <div className="relative bg-blue-100 w-full h-full p-6">
+         <div className="font-medium text-5xl">{weatherData.temperature}°C</div>
         <img
           className="z-1 absolute w-30 top-70 left-1/2 -translate-x-1/2 -translate-y-1/2"
           src={expressionDefault}
