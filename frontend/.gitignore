@@ -23,20 +23,4 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
-
-### BACKEND
-models/
-venv/
-.venv/
-env/
 .env
-response.wav
-user_input.wav
-output.wav
-alarms.db
-.DS_Store
-checkpoints*
-__pycache__
-
-### pycache
-__pycache__/
