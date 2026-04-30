@@ -18,9 +18,6 @@ class STTService:
         self.rate = 16000
         self.chunk = 1024
 
-
-
-
     def record_audio(self, duration=6, filename="user_input.wav"):
         p = pyaudio.PyAudio()
         stream = p.open(format=self.format,
@@ -48,22 +45,18 @@ class STTService:
             
             level = int((rms / 32768.0) * 300) 
             print(f"LEVEL : {level}")
-            if level == 0:
+            if level <= 2:
                 audio_break = audio_break + 1
             else:
                 audio_break = 0
             print(f"BREAK : {audio_break}")
-            # ----------------------------
 
         print("\nAufnahme beendet.")
         
-        # (Rest deines Codes zum Speichern der WAV...)
         stream.stop_stream()
         stream.close()
         p.terminate()
-        # ...
 
-        # Als WAV speichern
         wf = wave.open(filename, 'wb')
         wf.setnchannels(self.channels)
         wf.setsampwidth(p.get_sample_size(self.format))
