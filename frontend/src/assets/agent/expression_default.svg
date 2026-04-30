@@ -1,5 +1,10 @@
-<svg width="99" height="50" viewBox="0 0 99 50" fill="none" xmlns="http://www.w3.org/2000/svg">
-<path d="M22.5879 26.1265C22.5879 26.1265 26.4822 46.3769 47.901 46.3769C69.3197 46.3769 74.7718 26.1265 74.7718 26.1265" stroke="black" stroke-width="6" stroke-linecap="round"/>
-<circle cx="5.84148" cy="5.84148" r="5.84148" fill="#020202"/>
-<circle cx="92.2946" cy="5.84148" r="5.84148" fill="#020202"/>
+<?xml version="1.0" encoding="UTF-8"?>
+<svg id="Ebene_2" data-name="Ebene 2" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 265 165">
+  <g id="Ebene_1-2" data-name="Ebene 1">
+    <g>
+      <path d="M132.5,165c-46.87,0-85-35.89-85-80,0-5.52,4.48-10,10-10s10,4.48,10,10c0,33.08,29.16,60,65,60s65-26.92,65-60c0-5.52,4.48-10,10-10s10,4.48,10,10c0,44.11-38.13,80-85,80Z"/>
+      <circle cx="247.5" cy="17.5" r="17.5"/>
+      <circle cx="17.5" cy="17.5" r="17.5"/>
+    </g>
+  </g>
 </svg>

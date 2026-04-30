@@ -1,5 +1,5 @@
-import solinoBase from "../assets/agent/solino_base.png";
-import solinoRing from "../assets/agent/solino_ring.png";
+import solinoBase from "../assets/agent/solino_base.svg";
+import solinoRing from "../assets/agent/solino_ring.svg";
 import expressionDefault from "../assets/agent/expression_default.svg";
 import gsap from "gsap";
 import { useWeatherNowcast } from "../hooks/weather/useWeatherNowcast";
@@ -21,24 +21,22 @@ export function Agent() {
   initInfiniteRotationRing();
   return (
     <>
-      <div className="w-full h-full bg-blue-200">
-        <div className="relative bg-blue-100 w-1/2 h-1/2">
-          <img
-            className="z-1 absolute top-50 left-1/2 -translate-x-1/2 -translate-y-1/2"
-            src={expressionDefault}
-            alt="Happy Expression of Solino"
-          />
-          <img
-            className="solinoRing absolute top-1/2 left-1/2 h-auto w-auto max-w-none -translate-x-1/2 -translate-y-1/2 object-contain"
-            src={solinoRing}
-            alt="Solino Ring"
-          />
-          <img
-            className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2"
-            src={solinoBase}
-            alt="Solino Base"
-          />
-        </div>
+      <div className="relative bg-blue-100 w-full h-full">
+        <img
+          className="z-1 absolute w-30 top-70 left-1/2 -translate-x-1/2 -translate-y-1/2"
+          src={expressionDefault}
+          alt="Happy Expression of Solino"
+        />
+        <img
+          className="solinoRing absolute w-150 top-1/2 left-1/2 max-w-none -translate-x-1/2 -translate-y-1/2 object-contain"
+          src={solinoRing}
+          alt="Solino Ring"
+        />
+        <img
+          className="absolute top-1/2 w-100 left-1/2 -translate-x-1/2 -translate-y-1/2"
+          src={solinoBase}
+          alt="Solino Base"
+        />
       </div>
     </>
   );
@@ -51,7 +49,7 @@ export function Agent() {
         console.log("Rainy weather");
         break;
       case "Clear":
-        console.log("God weather");
+        console.log("Good weather");
         break;
       case "Clouds":
         console.log("Cloudy weather");

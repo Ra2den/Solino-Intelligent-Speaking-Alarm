@@ -1,26 +1,28 @@
-import { useEffect, useState } from "react";
 import "./App.css";
-import { AlarmsService } from "./services/alarms.service";
-import type { Alarm } from "./models/alarm.model";
+import { Agent } from "./components/Agent";
 
 function App() {
-  const [alarms, setAlarms] = useState<Array<Alarm>>([]);
-  useEffect(() => {
-    fetchAndSetAlarms();
-  }, []);
-
   return (
     <>
-      {/* TEMP JSON Darstellung der gefetchen Wecker */}
-      <pre>{JSON.stringify(alarms, null, 2)}</pre>
+      <div className="w-full h-full grid grid-cols-5 p-12">
+        {/* Widgets */}
+        <div className="col-span-2 grid grid-row-subgrid bg-red-200">
+          {/* Time Widget */}
+          <div className="row-span-3 bg-blue-400">{/* TODO Time Widget */}</div>
+          {/* Buttons */}
+          <div className="row-span-2 bg-green-300">{/* TODO Buttons */}</div>
+          {/* Alarm Widget */}
+          <div className="row-span-3 bg-yellow-500">
+            {/* TODO Alarm Widget */}
+          </div>
+        </div>
+        {/* Agent */}
+        <div className="col-span-3">
+          <Agent></Agent>
+        </div>
+      </div>
     </>
   );
-
-  function fetchAndSetAlarms() {
-    AlarmsService.getAlarms().then((alarms) => {
-      setAlarms(alarms);
-    });
-  }
 }
 
 export default App;
