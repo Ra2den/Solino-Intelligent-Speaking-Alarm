@@ -59,6 +59,7 @@ def delete_alarm(alarm_id: int):
 # --- Weather Endpoint ---
 
 # Fetch current weather as a WeatherNowcast object
+# weather_conditions: ['clear sky', 'few clouds', 'scattered clouds', 'broken clouds', 'shower rain', 'rain', 'thunderstorm', 'snow', 'mist']
 @app.get("/weather/nowcast")
 def get_weather_nowcast():
     return weatherForecast.get_current_weather_for_api()
@@ -66,7 +67,7 @@ def get_weather_nowcast():
 # Fetch weather forecast for the next 5 days in 3 hour intervalls
 @app.get("/weather/forecast")
 def get_weather_forecast():
-    return {"get /weather/forecast": "Implement this endpoint"}
+    return weatherForecast.get_weather_forecast_for_api()
 
 # Fetch time of todays sunrise
 @app.get("/weather/sunrise")

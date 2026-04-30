@@ -9,7 +9,6 @@ class WeatherNowcast(BaseModel):
     weather_description: str
 
 class WeatherForecast(BaseModel):
-    time: str
     forecast: list[WeatherNowcast]
 
 class Sunrise(BaseModel):

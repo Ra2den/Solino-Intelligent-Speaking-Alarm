@@ -111,18 +111,48 @@ def get_current_weather_from_specific_location(location_name, location_region):
 
 # --- weather forecast operations ---
 
-def fetch_and_parse_weather_forecast(cords):
+def fetch_weather_forecast(cords):
     forecast_weather_request_url = f"{BASE_URL}forecast?lat={cords.latitude}&lon={cords.longitude}&appid={API_KEY}"
 
     response = requests.get(forecast_weather_request_url)
 
     if response.status_code == 200:
-        data = response.json()
-        place_name = data['city']['name']
-        current_time = datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
-    
-        print(f"Wetter um {current_time} in {place_name}: {data}")
-        return response.json
+        return response.json()
+    else:
+        return NO_WEATHER_ERROR_MSG
+
+def fetch_and_parse_weather_forecast(cords):
+    data = fetch_weather_forecast(cords)
+    if data == NO_WEATHER_ERROR_MSG:
+        return data
+
+    place_name = data['city']['name']
+    current_time = datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
+
+    print(f"Wetter um {current_time} in {place_name}: {data}")
+    return response.json
+
+def get_weather_forecast_for_api():
+    city_cords = get_cords_from_ip_location()
+    data = fetch_weather_forecast(city_cords)
+
+    if data == NO_WEATHER_ERROR_MSG:
+        return data
+
+    forecast = WeatherForecast(forecast=[])
+
+    for weather_data in data['list']:
+        weather_nowcast_data = WeatherNowcast(
+            time=convert_timestamp_to_iso(weather_data['dt']),
+            temperature=round_half_up(convert_celvin_to_celcius(weather_data['main']['temp'])),
+            feels_like=round_half_up(convert_celvin_to_celcius(weather_data['main']['feels_like'])),
+            weather_condition=weather_data['weather'][0]['main'],
+            weather_description=weather_data['weather'][0]['description']
+        )
+
+        forecast.forecast.append(weather_nowcast_data)
+
+    return forecast
 
 def get_weather_forecast():
     city_cords = get_cords_from_ip_location()
