@@ -1,38 +1,38 @@
 import solinoBase from "../assets/agent/solino_base.svg";
 import solinoRing from "../assets/agent/solino_ring.svg";
 import expressionDefault from "../assets/agent/expression_default.svg";
-import gsap from "gsap";
 import { useWeatherNowcast } from "../hooks/weather/useWeatherNowcast";
 import { type WeatherCondition } from "../models/weather/weather-nowcast.model";
 
 export function Agent() {
   const { data: weatherData, isLoading, error } = useWeatherNowcast();
 
-  const condition = weatherData?.weather_condition;
-
-  if (!condition) return;
-
-  determineWeatherDisplay(condition);
-
   if (isLoading) return <div>Loading weather...</div>;
 
   if (error) return <div>Failed to load weather</div>;
 
-  initInfiniteRotationRing();
+  const condition = weatherData?.weather_condition;
+
+  if (!weatherData || !condition) return <div>Weather data unavailable</div>;
+
+  determineWeatherDisplay(condition);
+
   return (
     <>
       <div className="relative bg-blue-100 w-full h-full p-6">
-         <div className="font-medium text-5xl">{weatherData.temperature}°C</div>
+        <div className="font-medium text-5xl">{weatherData.temperature}°C</div>
         <img
           className="z-1 absolute w-30 top-70 left-1/2 -translate-x-1/2 -translate-y-1/2"
           src={expressionDefault}
           alt="Happy Expression of Solino"
         />
-        <img
-          className="solinoRing absolute w-150 top-1/2 left-1/2 max-w-none -translate-x-1/2 -translate-y-1/2 object-contain"
-          src={solinoRing}
-          alt="Solino Ring"
-        />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
+          <img
+            className="w-150 max-w-none object-contain animate-[spin_15s_linear_infinite]"
+            src={solinoRing}
+            alt="Solino Ring"
+          />
+        </div>
         <img
           className="absolute top-1/2 w-100 left-1/2 -translate-x-1/2 -translate-y-1/2"
           src={solinoBase}
@@ -58,14 +58,5 @@ export function Agent() {
       default:
         console.log("Unknown condition");
     }
-  }
-
-  function initInfiniteRotationRing() {
-    gsap.to(".solinoRing", {
-      repeat: -1,
-      duration: 15,
-      ease: "none",
-      rotation: -360,
-    });
   }
 }
