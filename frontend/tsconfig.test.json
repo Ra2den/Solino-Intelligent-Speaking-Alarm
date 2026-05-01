@@ -1,0 +1,17 @@
+{
+  "extends": "./tsconfig.app.json",
+  "compilerOptions": {
+    "allowImportingTsExtensions": false,
+    "noEmit": false,
+    "outDir": "./.test-build",
+    "rootDir": ".",
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "target": "es2023",
+    "types": ["node"],
+    "verbatimModuleSyntax": false,
+    "erasableSyntaxOnly": false,
+    "rewriteRelativeImportExtensions": true
+  },
+  "include": ["src/models/**/*.ts", "src/utils/**/*.ts", "tests/**/*.ts"]
+}

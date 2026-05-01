@@ -40,7 +40,10 @@ class WeatherService {
   // Fetch today's sunrise time
   getSunrise = async (): Promise<string> => {
     try {
-      return await apiClient.get(`${this.baseUrl}/sunrise`);
+      const data: { time: string } = await apiClient.get(
+        `${this.baseUrl}/sunrise`,
+      );
+      return data.time;
     } catch (err: unknown) {
       if (err instanceof Error) {
         console.error("weather.getSunrise error:", err.message);
@@ -52,7 +55,10 @@ class WeatherService {
   // Fetch today's sunset time
   getSunset = async (): Promise<string> => {
     try {
-      return await apiClient.get(`${this.baseUrl}/sunset`);
+      const data: { time: string } = await apiClient.get(
+        `${this.baseUrl}/sunset`,
+      );
+      return data.time;
     } catch (err: unknown) {
       if (err instanceof Error) {
         console.error("weather.getSunset error:", err.message);
