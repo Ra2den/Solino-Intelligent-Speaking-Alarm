@@ -31,8 +31,8 @@ export default function TimeWidget({
 
   return (
     /*TODO: make widget bg black once the background is established, for now we need the pink bg to see the widget*/
-    <div className="w-[423px] h-[239px] relative rounded-[50px] bg-pink-300 mix-blend-soft-light">
-      <div className="flex flex-col justify-center items-center w-[423px] h-[239px] pt-[25px] pb-[25px] ps-[50px] pe-[50px] rounded-[50px]">
+    <div className="w-full h-full relative rounded-[50px] bg-pink-300 mix-blend-soft-light">
+      <div className="flex flex-col justify-center items-center w-full h-full pt-[25px] pb-[25px] ps-[50px] pe-[50px] rounded-[50px]">
           <div className="text-white text-center font-medium">
             <time className="text-[40px]"
               dateTime={now.toISOString()}>{day_formatter.format(now)} </time>
