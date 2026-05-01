@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import "./App.css";
 import { AlarmsService } from "./services/alarms.service";
 import type { Alarm } from "./models/alarm.model";
-import Clock from "./components/Clock/Clock";
+import TimeWidget from "./components/TimeWidget";
 
 
 function App() {
@@ -16,8 +16,8 @@ function App() {
       {/* TEMP JSON Darstellung der gefetchen Wecker */}
       <pre>{JSON.stringify(alarms, null, 2)}</pre>
 
-      {/*Uhrzeit darstellen*/}
-      <Clock locale="de-DE" options={{ hour: "2-digit", minute: "2-digit", hour12: false }} />
+      {/*Uhrzeit und Tag darstellen; locale muss später dynamisch angepasst werden*/}
+      <TimeWidget locale="de-DE"/>
     </>
   );
 
