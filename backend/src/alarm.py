@@ -10,19 +10,20 @@ from langgraph.checkpoint.sqlite import SqliteSaver
 import os
 import datetime
 import time
-import threading
 from datetime import datetime
 import sqlite3
+import json
 
 from weatherForecast import get_current_weather, get_current_weather_from_specific_location
-from alarmDB import db_add_alarm, db_get_active_alarms, init_db, db_toggle_alarm, db_delete_alarm
+from ai_db_service import add_alarm, get_active_alarms, toggle_alarm, delete_alarm_by_time
 from speechToText import STTService
 
+with open('settings.json', 'r') as file:
+    settings = json.load(file)
+if settings:
+    speaker = settings["speaker"]
 
 
-
-
-# System Prompt
 system_message = SystemMessage(
     content="""
     ### IDENTITÄT UND ROLLE
@@ -47,21 +48,23 @@ Gebe ALLE Wetterdaten die du bekommst an den Nutzer Weiter, also Temperatur, Him
 
 ### BEISPIEL-ANTWORT
 Nutzer: "Stell den Hacker auf 8 Uhr."
-Antwort: "Alles klar, dein strahlendes Erwachen ist für 8 Uhr gebucht – ich habe den Wecker gestellt, damit du nicht verschläfst! Ich bin übrigens deine Susonne.
+Antwort: "Alles klar, dein strahlendes Erwachen ist für 8 Uhr gebucht – ich habe den Wecker gestellt, damit du nicht verschläfst!
 """
 )
+
+
 
 # --- Tools ---
 @tool
 def set_alarm(uhrzeit: str):
     """Stellt einen Wecker für eine bestimmte Uhrzeit (Format HH:MM)."""
-    db_add_alarm(uhrzeit, "Vom LLM gestellt")
+    add_alarm(uhrzeit, "Vom LLM gestellt")
     return f"Wecker auf {uhrzeit} Uhr programmiert."
 
 @tool
 def list_alarms():
     """Gibt eine Liste aller aktuell gestellten Wecker zurück."""
-    active_alarms = db_get_active_alarms()
+    active_alarms = get_active_alarms()
     if not active_alarms:
         return "Du hast aktuell keine aktiven Wecker."
     
@@ -73,7 +76,7 @@ def list_alarms():
 @tool
 def remove_alarm_by_time(uhrzeit: str):
     """Löscht einen Wecker basierend auf der Uhrzeit (Format HH:MM)."""
-    res = db_delete_alarm(uhrzeit)
+    res = delete_alarm_by_time(uhrzeit)
     return res
     
 
@@ -129,41 +132,6 @@ workflow.add_edge("tools", "agent")
 
 app = workflow.compile()
 
-def speak(text):
-    print(f"Generiere Audio für: {text}...")
-    # 'aplay' ist der Standard-Player auf Linux, 'afplay' auf Mac
-    command = f'echo "{text}" | piper --model models/de_DE-thorsten-high.onnx --output_file response.wav && afplay response.wav'
-    os.system(command)
-
-def alarm_monitor():
-    print("Wecker-Monitor aktiv und wartet...")
-    last_triggered_minute = "" # Verhindert, dass der Wecker 60x in einer Minute klingelt
-
-    while True:
-        now_dt = datetime.now()
-        now_time = now_dt.strftime("%H:%M")
-        
-        # Nur prüfen, wenn wir in einer neuen Minute sind
-        if now_time != last_triggered_minute:
-            active_alarms = db_get_active_alarms()
-            
-            for alarm in active_alarms:
-                if alarm['uhrzeit'] == now_time:
-                    print(f"!!! ALARM !!! Es ist {now_time} Uhr!")
-                    
-                    # Sound abspielen
-                    os.system("afplay alarm_sound.mp3") 
-                    
-                    # Status in DB aktualisieren
-                    db_toggle_alarm(alarm['id'], status=0)
-                    
-                    # Diese Minute als "erledigt" markieren
-                    last_triggered_minute = now_time
-        
-        # Alle 10 Sekunden prüfen ist CPU-schonender und präzise genug
-        time.sleep(10)
-
-
 stt_service = STTService(model_size="base") 
 
 from langgraph.checkpoint.memory import MemorySaver
@@ -177,60 +145,108 @@ app = workflow.compile(checkpointer=memory)
 
 config = {"configurable": {"thread_id": "haupt_user_session"}}
 
+def speak(text):
+    #print(f"Generiere Audio für: {text}...")
+    # 'aplay' ist der Standard-Player auf Linux, 'afplay' auf Mac
+    if speaker == "male":
+        model = "--model models/de_DE-thorsten-high.onnx"
+    else:
+        model = "--model models/de_DE-kerstin-low.onnx"
+        
+    command = f'echo "{text}" | piper {model} --output_file response.wav && afplay response.wav'
+    os.system(command)
 
-if __name__ == "__main__":
-    # 1. Datenbanken initialisieren
-    init_db()  
+def alarm_monitor():
+    print("Wecker-Monitor aktiv und wartet...")
+    last_triggered_minute = ""
+
+    while True:
+        now_dt = datetime.now()
+        now_time = now_dt.strftime("%H:%M")
+        
+        if now_time != last_triggered_minute:
+            active_alarms = get_active_alarms()
+            
+            for alarm in active_alarms:
+                if alarm['time'] == now_time:
+                    wake_up(now_time)
+                    
+                    # Status in DB aktualisieren
+                    toggle_alarm(alarm['id'])
+                    
+                    last_triggered_minute = now_time
+        
+        time.sleep(10)
+
+def wake_up(time, alarm_label=""):
+    print(f"!!! ALARM !!! Es ist {time} Uhr!")
+
+    #os.system("afplay alarm_sound.mp3") 
+
+    """Wird vom Monitor aufgerufen. Susonne prüft das Wetter und weckt dich dann."""
     
-    # 2. Wecker-Monitor im Hintergrund starten
-    monitor_thread = threading.Thread(target=alarm_monitor, daemon=True)
-    monitor_thread.start()
-
-    # 3. Session-Konfiguration 
+    wake_up_prompt = f"""
+    WICHTIG: Es ist Zeit für den Wecker '{alarm_label}'.
+    1. Nutze zuerst das Wetter-Tool, um das aktuelle Wetter für meinen Standort zu prüfen.
+    2. Generiere DANN einen herzlichen, Guten Morgen Spruch um den Nutzer aufzuwecken.
+    Sei direkt mit dem Nutzer und versuche ihn AKTIV auf witzige und nette weise aufzuwecken.
+    3. Gebe dabei die Uhrzeit zu der geweckt werden sollte wieder ({time})
+    4. Baue die Wetterinformationen (Temperatur/Zustand) und eine passende 
+       Kleidungsempfehlung charmant in deine Begrüßung ein.
+    5. MACHE UNBEDINGT MEHR ALS 3 SÄTZE, damit der Nutzer aufwachen kann, während du sprichtst. keine Emojis.
+    -> Beispiel : "Guten Morgen aufgewacht Schlafmütze, es ist {time} und draußen hat es 20 Grad
+    """
+    
+    inputs = {"messages": [HumanMessage(content=wake_up_prompt)]}
     config = {"configurable": {"thread_id": "User"}}
 
-    print("Susonne ist bereit und der Monitor läuft im Hintergrund.")
-    print("Stoppen mit Strg+C")
+    print("Wecker ausgelöst. Susonne bereitet den Tag vor...")
 
-    try:
-        while True:
-            print("\n" + "="*30)
-            print("Bereit für deine Frage.")
-            user_input = input("Drücke ENTER zum Sprechen (oder 'exit' zum Beenden): ")
+    ai_output(inputs=inputs, config=config)
+    return
 
-            if user_input.lower() == 'exit':
-                print("Susonne verabschiedet sich... Bis bald!")
-                break
+def interact():
 
-            # --- SCHRITT 1: Aufnahme ---
-            audio_file = stt_service.record_audio(duration=6)
+    # --- SCHRITT 1: Aufnahme ---
+    audio_file = stt_service.record_audio(duration=6)
             
-            # --- SCHRITT 2: STT ---
-            user_text = stt_service.transcribe(audio_file)
-            print(f"Erkannt: {user_text}")
+    # --- SCHRITT 2: STT ---
+    user_text = stt_service.transcribe(audio_file)
+    print(f"Erkannt: {user_text}")
             
-            # --- SCHRITT 3: Verarbeitung ---
-            if user_text.strip():
-                inputs = {"messages": [HumanMessage(content=user_text)]}
-                final_response = ""
+    # --- SCHRITT 3: Verarbeitung ---
+    if user_text.strip():
+        inputs = {"messages": [HumanMessage(content=user_text)]}
+        final_response = ""
                 
-                print("Susonne überlegt...")
+        print("Susonne überlegt...")
+
+        config = {"configurable": {"thread_id": "User"}}
+
+        ai_output(inputs=inputs, config=config)
                 
-                for output in app.stream(inputs, config=config, stream_mode="values"):
-                    if "messages" in output and output["messages"]:
-                        last_msg = output["messages"][-1]
+        
+    else:
+        print("Ich habe nichts gehört. Bitte versuch es nochmal.")
+
+def ai_output(inputs, config):
+
+    for output in app.stream(inputs, config=config, stream_mode="values"):
+            if "messages" in output and output["messages"]:
+                last_msg = output["messages"][-1]
                         
-                        if isinstance(last_msg, AIMessage) and last_msg.content:
-                            final_response = last_msg.content
+            if isinstance(last_msg, AIMessage) and last_msg.content:
+                final_response = last_msg.content
 
-                # --- SCHRITT 4: Antwort ausgeben & Sprechen ---
-                if final_response:
-                    print(f"Susonne: {final_response}")
-                    speak(final_response)
-                else:
-                    print("Keine Antwort von Susonne erhalten.")
-            else:
-                print("Ich habe nichts gehört. Bitte versuch es nochmal.")
-
-    except KeyboardInterrupt:
-        print("\nProgramm beendet. Wecker-Monitor wird gestoppt...")
+        # --- SCHRITT 4: Antwort ausgeben & Sprechen ---
+    if final_response:
+        print(f"Susonne: {final_response}")
+        speak(final_response)
+    else:
+        print("Keine Antwort von Susonne erhalten.")
+    
+    return
+    
+if __name__ == '__main__':
+   pass
+   #wake_up("8:20","Uni")

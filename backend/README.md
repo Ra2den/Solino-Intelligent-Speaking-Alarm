@@ -68,6 +68,10 @@ The backend contains the core Python logic for Solino:
    cd backend/models
    curl -L "https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/de/de_DE/thorsten/high/de_DE-thorsten-high.onnx?download=true" -o de_DE-thorsten-high.onnx
    curl -L "https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/de/de_DE/thorsten/high/de_DE-thorsten-high.onnx.json?download=true" -o de_DE-thorsten-high.onnx.json
+   curl -L "https://huggingface.co/rhasspy/piper-voices/resolve/main/de/de_DE/kerstin/low/de_DE-kerstin-low.onnx?download=true" -o
+   de_DE-kerstin-low.onnx
+   curl -L "https://huggingface.co/rhasspy/piper-voices/resolve/main/de/de_DE/kerstin/low/de_DE-kerstin-low.onnx.json?download=true" -o
+   de_DE-kerstin-low.json
    ```
 
 7. If macOS: Install Portaudio: 
@@ -82,7 +86,7 @@ The backend contains the core Python logic for Solino:
 From the `backend/` directory with the virtual environment active:
 
 ```bash
-python src/poc.py
+python src/main.py
 ```
 
 The script will:
