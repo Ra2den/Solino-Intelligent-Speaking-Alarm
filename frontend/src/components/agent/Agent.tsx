@@ -1,13 +1,14 @@
-import solinoBase from "../assets/agent/solino_base.svg";
-import solinoRing from "../assets/agent/solino_ring.svg";
-import expressionDefault from "../assets/agent/expression_default.svg";
-import expressionRaisedBrows from "../assets/agent/expression_guard.svg";
+import solinoBase from "../../assets/agent/solino_base.svg";
+import solinoRing from "../../assets/agent/solino_ring.svg";
+import expressionDefault from "../../assets/agent/expression_default.svg";
+import expressionRaisedBrows from "../../assets/agent/expression_guard.svg";
 import { useLayoutEffect, useRef } from "react";
 import gsap from "gsap";
-import { useWeatherNowcast } from "../hooks/weather/useWeatherNowcast";
-import cloudM from "../assets/agent/cloud_m.png";
-import cloudS from "../assets/agent/cloud_s.png";
-import raindropIcon from "../assets/agent/raindrop.svg";
+import { useWeatherNowcast } from "../../hooks/weather/useWeatherNowcast";
+import cloudM from "../../assets/agent/cloud_m.png";
+import cloudS from "../../assets/agent/cloud_s.png";
+import raindropIcon from "../../assets/agent/raindrop.svg";
+import { TemperatureDisplay } from "./TemperatureDisplay";
 
 const RAIN_DROP_POSITIONS = [
   "absolute -bottom-9 left-[5%] z-0 w-[20%]",
@@ -34,6 +35,7 @@ export function Agent() {
 
   const shouldAnimateRain =
     animationsEnabled && !isLoading && !error && !!weatherData && isRainy;
+  const isWeatherUnavailable = !weatherData || !condition;
 
   useLayoutEffect(() => {
     if (!shouldAnimateRain || !weatherLayerRef.current) return;
@@ -74,16 +76,15 @@ export function Agent() {
     return () => ctx.revert();
   }, [shouldAnimateRain]);
 
-  if (isLoading) return <div>Loading weather...</div>;
-
-  if (error) return <div>Failed to load weather</div>;
-
-  if (!weatherData || !condition) return <div>Weather data unavailable</div>;
-
   return (
     <>
-      <div className="relative bg-blue-100 w-full h-full p-6">
-        <div className="font-medium text-5xl">{weatherData.temperature}°C</div>
+      <div className="relative w-full h-full p-6">
+        <TemperatureDisplay
+          temperature={weatherData?.temperature}
+          isLoading={isLoading}
+          hasError={!!error}
+          isUnavailable={isWeatherUnavailable}
+        />
         {/* Weather */}
         <div ref={weatherLayerRef}>
           {condition == "Clouds" && displayCloudyWeather()}
