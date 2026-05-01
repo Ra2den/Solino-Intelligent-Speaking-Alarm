@@ -18,28 +18,36 @@ export default function TimeWidget({
     return () => clearInterval(id);
   }, [intervalMs]);
 
-  const time_formatter = new Intl.DateTimeFormat(locale ?? undefined, options ?? {
-    hour: "2-digit",
-    minute: "2-digit",
-  });
+  const time_formatter = new Intl.DateTimeFormat(
+    locale ?? undefined,
+    options ?? {
+      hour: "2-digit",
+      minute: "2-digit",
+    },
+  );
 
-   const day_formatter = new Intl.DateTimeFormat(locale ?? undefined, options ?? {
-    weekday: "long",
-    day: "2-digit",
-    month: "long",
-  });
+  const day_formatter = new Intl.DateTimeFormat(
+    locale ?? undefined,
+    options ?? {
+      weekday: "long",
+      day: "2-digit",
+      month: "long",
+    },
+  );
 
   return (
     /*TODO: make widget bg black once the background is established, for now we need the pink bg to see the widget*/
     <div className="w-full h-full relative rounded-[50px] bg-pink-300 mix-blend-soft-light">
-      <div className="flex flex-col justify-center items-center w-full h-full pt-[25px] pb-[25px] ps-[50px] pe-[50px] rounded-[50px]">
-          <div className="text-white text-center font-medium">
-            <time className="text-[40px]"
-              dateTime={now.toISOString()}>{day_formatter.format(now)} </time>
-            <time className="text-[100px]"
-              dateTime={now.toISOString()}>{time_formatter.format(now)} </time>
-          </div>
+      <div className="flex flex-col justify-center items-center w-full h-full pt-6.25 pb-6.25 ps-12.5 pe-12.5 rounded-[50px]">
+        <div className="text-white text-center font-medium">
+          <time className="text-[40px]" dateTime={now.toISOString()}>
+            {day_formatter.format(now)}{" "}
+          </time>
+          <time className="text-[100px]" dateTime={now.toISOString()}>
+            {time_formatter.format(now)}{" "}
+          </time>
         </div>
+      </div>
     </div>
-  )
+  );
 }
