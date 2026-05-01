@@ -2,8 +2,8 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from typing import Optional, List
 import db
-from schemas.alarm import Alarm, AlarmCreate
-from schemas.weather import WeatherNowcast, WeatherForecast, Sunrise, Sunset
+from schemas.alarm_schema import Alarm, AlarmCreate
+from schemas.weather_schema import WeatherNowcast, WeatherForecast, Sunrise, Sunset
 import weatherForecast
 
 app = FastAPI()
@@ -45,7 +45,7 @@ def toggle_alarm(alarm_id: int):
 # Create a new alarm
 @app.post("/alarms", response_model=Alarm)
 def create_alarm(alarm: AlarmCreate):
-    return db.db_add_alarm(alarm.time, alarm.label)
+    return db.db_add_alarm(alarm.time, alarm.label, alarm.recurring_days)
 
 # Update an existing alarm
 @app.put("/alarms/{alarm_id}", response_model=Optional[Alarm])
