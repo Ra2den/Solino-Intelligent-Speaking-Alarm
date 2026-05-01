@@ -1,7 +1,7 @@
 import sqlite3
-
-import sqlite3
+import json
 from contextlib import contextmanager
+from db_helper import parse_weekdays
 
 class Database:
     def __init__(self, db_path="alarms.db"):
@@ -26,6 +26,7 @@ class Database:
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 time TEXT NOT NULL,
                 label TEXT,
+                recurring_days JSON,
                 active INTEGER DEFAULT 1
             )
         ''')
@@ -39,18 +40,31 @@ class Database:
         with self._connect() as conn:
             cursor = conn.execute(query, params)
             rows = cursor.fetchall()
-            return [dict(row) for row in rows]
+            items = []
+            for row in rows:
+                item = dict(row)
+                if item.get("recurring_days"):
+                    item["recurring_days"] = parse_weekdays(item["recurring_days"])
+                items.append(item)
+            return items        
 
     def fetch_one(self, query, params=()):
         with self._connect() as conn:
             cursor = conn.execute(query, params)
             row = cursor.fetchone()
-            return dict(row) if row else None
+            if not row:
+                return None
 
-def db_add_alarm(time, label):
+            item = dict(row)
+            if item.get("recurring_days"):
+                item["recurring_days"] = parse_weekdays(item["recurring_days"])
+            return item
+
+def db_add_alarm(time, label, recurring_days):
+    recurring_days_json = json.dumps(recurring_days)
     alarm_id = db.execute(
-        "INSERT INTO alarms (time, label, active) VALUES (?, ?, 1)",
-        (time, label)
+        "INSERT INTO alarms (time, label, recurring_days, active) VALUES (?, ?, ?, 1)",
+        (time, label, recurring_days_json)
     )
     return db.fetch_one("SELECT * FROM alarms WHERE id = ?", (alarm_id,))
     
