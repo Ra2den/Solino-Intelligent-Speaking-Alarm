@@ -1,26 +1,47 @@
-import { useEffect, useState } from "react";
 import "./App.css";
-import { AlarmsService } from "./services/alarms.service";
+import { AlarmWidget } from "./components/AlarmWidget";
 import type { Alarm } from "./models/alarm.model";
 
+const demoAlarms: Alarm[] = [
+  {
+    id: 1,
+    label: "Hochschule",
+    time: "06:15",
+    active: true,
+    days: ["Mi", "Do", "Fr"],
+  },
+  {
+    id: 2,
+    label: "Arbeit",
+    time: "08:00",
+    active: true,
+    days: ["Mo", "Di"],
+  },
+  {
+    id: 3,
+    label: "Tabletten",
+    time: "20:00",
+    active: true,
+    days: ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"],
+  },
+];
+
 function App() {
-  const [alarms, setAlarms] = useState<Array<Alarm>>([]);
-  useEffect(() => {
-    fetchAndSetAlarms();
-  }, []);
-
   return (
-    <>
-      {/* TEMP JSON Darstellung der gefetchen Wecker */}
-      <pre>{JSON.stringify(alarms, null, 2)}</pre>
-    </>
-  );
+    <div className="app">
+      <p>Anzahl Alarme: {demoAlarms.length}</p>
 
-  function fetchAndSetAlarms() {
-    AlarmsService.getAlarms().then((alarms) => {
-      setAlarms(alarms);
-    });
-  }
+      {demoAlarms.map((alarm) => (
+        <AlarmWidget
+          key={alarm.id}
+          name={alarm.label}
+          time={alarm.time}
+          active={alarm.active}
+          days={alarm.days}
+        />
+      ))}
+    </div>
+  );
 }
 
 export default App;
