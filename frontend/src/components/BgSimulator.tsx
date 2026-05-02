@@ -11,27 +11,67 @@ export default function BgSimulator({ children }: BgSimulatorProps) {
   const [phase, setPhase] = useState<Phase>();
 
   useEffect(() => {
+    let timeoutId: number | undefined;
+    let isCancelled = false;
+
+    const getStartOfNextDay = (now: number) => {
+      const nextDay = new Date(now);
+      nextDay.setHours(24, 0, 0, 0);
+      return nextDay.getTime();
+    };
+
+    const scheduleNextRun = (delay: number) => {
+      if (isCancelled || delay <= 0) return;
+
+      timeoutId = window.setTimeout(() => {
+        void setup();
+      }, delay);
+    };
+
     async function setup() {
-      const sunrise = new Date(await weatherService.getSunrise()).getTime();
-      const sunset = new Date(await weatherService.getSunset()).getTime();
+      try {
+        // Both timestamps are needed to compute the active phase and the next
+        // boundary where the background should change again.
+        const [sunriseTime, sunsetTime] = await Promise.all([
+          weatherService.getSunrise(),
+          weatherService.getSunset(),
+        ]);
 
-      const now = Date.now();
+        if (isCancelled) return;
 
-      const TRANSITION = 30 * 60 * 1000;
+        const sunrise = new Date(sunriseTime).getTime();
+        const sunset = new Date(sunsetTime).getTime();
+        const now = Date.now();
+        const transition = 30 * 60 * 1000;
 
-      setPhase(getPhase(now, sunrise, sunset, TRANSITION));
+        setPhase(getPhase(now, sunrise, sunset, transition));
 
-      const next = getNextTransition(now, sunrise, sunset, TRANSITION);
+        // Re-arm the timer for the next phase boundary. Once the final sunset
+        // boundary has passed, wait until midnight and fetch the next day's
+        // sunrise/sunset values.
+        const next = getNextTransition(now, sunrise, sunset, transition);
+        const delay =
+          next !== undefined ? next - now : getStartOfNextDay(now) - now;
 
-      if (next) {
-        const delay = next - now;
-        setTimeout(() => {
-          setup(); // neu berechnen
-        }, delay);
+        scheduleNextRun(delay);
+      } catch (error) {
+        console.error("bgSimulator.setup error:", error);
+
+        // Retry after a short delay so a transient API failure does not stop
+        // the day/night cycle permanently.
+        scheduleNextRun(60 * 1000);
       }
     }
 
-    setup();
+    void setup();
+
+    return () => {
+      isCancelled = true;
+
+      if (timeoutId !== undefined) {
+        window.clearTimeout(timeoutId);
+      }
+    };
   }, []);
 
   const getBgClass = () => {

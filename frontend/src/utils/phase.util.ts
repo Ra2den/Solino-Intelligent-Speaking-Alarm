@@ -6,6 +6,8 @@ export function getPhase(
   sunset: number,
   transition: number,
 ): Phase {
+  // Sunrise and sunset each own a symmetric transition window. Outside those
+  // windows, the day phase sits between them and the rest is night.
   const isSunrise =
     now >= sunrise - transition && now <= sunrise + transition;
   const isSunset = now >= sunset - transition && now <= sunset + transition;
@@ -23,6 +25,8 @@ export function getNextTransition(
   sunset: number,
   transition: number,
 ) {
+  // These are the exact timestamps where the simulator should re-evaluate and
+  // possibly switch to a different phase.
   const times = [
     sunrise - transition,
     sunrise + transition,
