@@ -1,0 +1,32 @@
+import db
+
+def add_alarm(time, label):
+    db.db_add_alarm(time, label)
+    return f"Ich habe einen Wecker für {time} Uhr mit dem Label '{label}' erstellt."
+
+def get_all_alarms():
+    alarms = db.db_get_all_alarms()
+    if not alarms:
+        return "Es sind keine Wecker gespeichert."
+    return "Folgende Wecker sind gespeichert:\n" + "\n".join([f"{alarm['id']}: {alarm['time']} Uhr - {alarm['label']} (Aktiv: {'Ja' if alarm['active'] else 'Nein'})" for alarm in alarms])
+
+def get_active_alarms():
+    alarms = db.db_get_active_alarms()
+    return alarms
+
+def get_alarm_by_time(time):
+    alarm = db.db_get_alarm_by_time(time)
+    if not alarm:
+        return f"Kein Wecker für {time} Uhr gefunden."
+    return f"Wecker für {time} Uhr gefunden: {alarm['label']}"
+
+def toggle_alarm(alarm_id):
+    db.db_toggle_alarm(alarm_id)
+    return "Status des Weckers aktualisiert."
+
+def delete_alarm_by_time(time):
+    success = db.db_delete_alarm_by_time(time)
+    if success:
+        return f"Ich habe den Wecker für {time} Uhr gelöscht."
+    else:
+        return f"Ich konnte keinen Wecker für {time} Uhr finden."
