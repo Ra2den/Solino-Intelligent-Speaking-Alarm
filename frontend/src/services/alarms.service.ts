@@ -1,5 +1,5 @@
 import { apiClient } from "./api-client";
-import { type Alarm } from "../models/alarm.model";
+import { type Alarm } from "../models/alarm/alarm.model";
 
 export class AlarmsService {
   private static baseUrl = "/alarms";
