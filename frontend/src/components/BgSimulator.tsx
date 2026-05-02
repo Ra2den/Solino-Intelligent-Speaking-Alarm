@@ -1,5 +1,4 @@
 import { useEffect, useState, type ReactNode } from "react";
-import { weatherService } from "../services/weather.service";
 import type { Phase } from "../models/simulator/phase.model.js";
 import { getNextTransition, getPhase } from "../utils/phase.util.js";
 
@@ -12,19 +11,11 @@ export default function BgSimulator({ children }: BgSimulatorProps) {
 
   useEffect(() => {
     async function setup() {
-      const sunrise = new Date(await weatherService.getSunrise()).getTime();
-      const sunset = new Date(await weatherService.getSunset()).getTime();
-
-      const now = Date.now();
-
-      const TRANSITION = 30 * 60 * 1000;
-
-      setPhase(getPhase(now, sunrise, sunset, TRANSITION));
-
-      const next = getNextTransition(now, sunrise, sunset, TRANSITION);
+      setPhase(await getPhase());
+      const next = await getNextTransition();
 
       if (next) {
-        const delay = next - now;
+        const delay = next - Date.now();
         setTimeout(() => {
           setup(); // neu berechnen
         }, delay);
