@@ -17,8 +17,9 @@ function App() {
             </div>
             {/* Buttons */}
             <div className="row-span-2 bg-green-300">{/* TODO Buttons */}</div>
-            <AlarmWidget></AlarmWidget>
-            <div className="row-span-3"></div>
+            <div className="row-span-3">
+              <AlarmWidget></AlarmWidget>
+            </div>
           </div>
           {/* Agent */}
           <div className="col-span-3">

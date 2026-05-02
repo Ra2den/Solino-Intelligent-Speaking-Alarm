@@ -1,11 +1,11 @@
 import { apiClient } from "./api-client";
 import { type Alarm } from "../models/alarm/alarm.model";
 
-export class AlarmsService {
-  private static baseUrl = "/alarms";
+class AlarmsService {
+  private baseUrl = "/alarms";
 
   // Fetch all alarms
-  static async getAlarms(): Promise<Alarm[]> {
+  async getAlarms(): Promise<Alarm[]> {
     try {
       return await apiClient.get(this.baseUrl);
     } catch (err: unknown) {
@@ -17,7 +17,7 @@ export class AlarmsService {
   }
 
   // Fetch all active alarms
-  static async getActiveAlarms(): Promise<Alarm[]> {
+  async getActiveAlarms(): Promise<Array<Alarm>> {
     try {
       return await apiClient.get(`${this.baseUrl}/active`);
     } catch (err: unknown) {
@@ -28,7 +28,7 @@ export class AlarmsService {
     }
   }
   // Fetch alarm by ID
-  static async getAlarm(id: number): Promise<Alarm> {
+  async getAlarm(id: number): Promise<Alarm> {
     try {
       return await apiClient.get(`${this.baseUrl}/${id}`);
     } catch (err: unknown) {
@@ -40,7 +40,7 @@ export class AlarmsService {
   }
 
   // Create a new alarm
-  static async createAlarm(alarm: Partial<Alarm>): Promise<Alarm> {
+  async createAlarm(alarm: Partial<Alarm>): Promise<Alarm> {
     try {
       return await apiClient.post(this.baseUrl, alarm);
     } catch (err: unknown) {
@@ -52,7 +52,7 @@ export class AlarmsService {
   }
 
   // Toggle alarm status (activate/deactivate)
-  static async toggleAlarm(id: number): Promise<Alarm> {
+  async toggleAlarm(id: number): Promise<Alarm> {
     try {
       return await apiClient.get(`${this.baseUrl}/${id}/toggle`);
     } catch (err: unknown) {
@@ -64,7 +64,7 @@ export class AlarmsService {
   }
 
   // Update an existing alarm
-  static async updateAlarm(id: number, alarm: Partial<Alarm>): Promise<Alarm> {
+  async updateAlarm(id: number, alarm: Partial<Alarm>): Promise<Alarm> {
     try {
       return await apiClient.put(`${this.baseUrl}/${id}`, alarm);
     } catch (err: unknown) {
@@ -76,7 +76,7 @@ export class AlarmsService {
   }
 
   // Delete an alarm by ID
-  static async deleteAlarm(id: number): Promise<void> {
+  async deleteAlarm(id: number): Promise<void> {
     try {
       await apiClient.delete(`${this.baseUrl}/${id}`);
     } catch (err: unknown) {
@@ -87,3 +87,5 @@ export class AlarmsService {
     }
   }
 }
+
+export const alarmsService = new AlarmsService();
