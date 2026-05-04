@@ -1,5 +1,7 @@
-import { type WeekdayArray } from "../../models/alarm/alarm.model";
-import { type Weekday } from "../../models/alarm/alarm.model";
+import {
+  type Weekday,
+  type WeekdayArray,
+} from "../../models/alarm/alarm.model";
 
 const dayChips: Array<{ label: string; value: Weekday }> = [
   { label: "M", value: "MON" },
@@ -11,11 +13,12 @@ const dayChips: Array<{ label: string; value: Weekday }> = [
   { label: "S", value: "SUN" },
 ];
 
-export function WeekdayChips({
-  recurringDays,
-}: {
+type WeekdayChipsProps = {
   recurringDays: WeekdayArray;
-}) {
+  onChange?: (days: WeekdayArray) => void;
+};
+
+export function WeekdayChips({ recurringDays, onChange }: WeekdayChipsProps) {
   return (
     <div className="mt-6.25 flex items-center justify-between gap-2.5">
       {dayChips.map((day) => {
@@ -26,9 +29,10 @@ export function WeekdayChips({
             key={day.value}
             className={`flex h-9.75 w-11.75 items-center justify-center bg-white px-3 py-1.25 text-[25px] leading-none font-medium transition-all duration-200 ${
               isActive
-                ? "rounded-[20px] text-[#cf375f]"
-                : "rounded-[10px] text-[#cf375f] opacity-50"
+                ? "rounded-[20px] text-black"
+                : "rounded-[10px] text-black opacity-50"
             }`}
+            onClick={() => toggleDay(day.value)}
             type="button"
           >
             {day.label}
@@ -37,4 +41,13 @@ export function WeekdayChips({
       })}
     </div>
   );
+
+  function toggleDay(day: Weekday) {
+    const currentDays = recurringDays ?? [];
+    const nextDays = currentDays.includes(day)
+      ? currentDays.filter((currentDay) => currentDay !== day)
+      : [...currentDays, day];
+
+    onChange?.(nextDays.length > 0 ? nextDays : null);
+  }
 }

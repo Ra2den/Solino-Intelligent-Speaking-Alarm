@@ -5,19 +5,25 @@ import AlarmCreate from "./alarm-create/AlarmCreate";
 import { useState } from "react";
 
 export function HomeScreen() {
-  const [isCreate, setIsCreate] = useState(false);
+  const [isCreate, setIsCreate] = useState(true);
 
   return (
-    <div className="w-full h-full grid grid-cols-5 p-12">
-      {/* Widgets */}
-      <div className="col-span-2 grid grid-row-subgrid">
-        {isCreate ? <AlarmCreate /> : <Widgets />}
-      </div>
-      {/* Agent */}
-      <div className="col-span-3">
-        <Agent></Agent>
-      </div>
-    </div>
+    <>
+      {isCreate ? (
+        <AlarmCreate />
+      ) : (
+        <div className="w-full h-full grid grid-cols-5 p-12">
+          {/* Widgets */}
+          <div className="col-span-2 grid grid-row-subgrid">
+            <Widgets />
+          </div>
+          {/* Agent */}
+          <div className="col-span-3">
+            <Agent></Agent>
+          </div>
+        </div>
+      )}
+    </>
   );
 
   function Widgets() {
