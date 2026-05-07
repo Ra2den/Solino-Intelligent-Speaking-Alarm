@@ -5,7 +5,7 @@ import AlarmCreate from "./alarm-create/AlarmCreate";
 import { useState } from "react";
 
 export function HomeScreen() {
-  const [isCreate, setIsCreate] = useState(true);
+  const [isCreate, setIsCreate] = useState(false);
 
   return (
     <>
@@ -18,6 +18,7 @@ export function HomeScreen() {
             label: "Wecker 45",
             active: true,
           }}
+          onCreate={() => setIsCreate(false)}
         />
       ) : (
         <div className="w-full h-full grid grid-cols-5 p-12">
@@ -41,9 +42,12 @@ export function HomeScreen() {
         <div className="row-span-3">
           <TimeWidget locale="de-DE" />
         </div>
-        {/* Buttons */}
-        <button onClick={() => setIsCreate(true)}></button>
-        <div className="row-span-2 bg-green-300">{/* TODO Buttons */}</div>
+        <div className="row-span-2">
+          {/* Buttons */}
+          <button className="bg-blue-500 text-white py-2 px-4 rounded" onClick={() => setIsCreate(true)}>
+            Wecker erstellen
+          </button>
+        </div>
         <div className="row-span-3">
           <AlarmWidget></AlarmWidget>
         </div>

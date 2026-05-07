@@ -21,9 +21,10 @@ type Inputs = {
 
 type AlarmCreateProps = {
   alarm?: Partial<Alarm>;
+  onCreate?: () => void;
 };
 
-export function AlarmCreate({ alarm }: AlarmCreateProps) {
+export function AlarmCreate({ alarm, onCreate }: AlarmCreateProps) {
   const { handleSubmit, control, reset } = useForm<Inputs>({
     defaultValues: {
       time: alarm?.time ?? "00:00",
@@ -133,17 +134,18 @@ export function AlarmCreate({ alarm }: AlarmCreateProps) {
         submittedAlarm,
       );
       console.log("Alarm updated:", updatedAlarm);
-      return;
-    }
-    const submittedAlarm = AlarmCreateSchema.parse({
-      time: data.time,
-      recurring_days: data.recurring_days,
-      label: data.label,
-    });
+    } else {
+      const submittedAlarm = AlarmCreateSchema.parse({
+        time: data.time,
+        recurring_days: data.recurring_days,
+        label: data.label,
+      });
 
-    // Logging
-    const createdAlarm = await alarmsService.createAlarm(submittedAlarm);
-    console.log("Alarm created:", createdAlarm);
+      // Logging
+      const createdAlarm = await alarmsService.createAlarm(submittedAlarm);
+      console.log("Alarm created:", createdAlarm);
+    }
+    onCreate?.();
   }
 }
 
