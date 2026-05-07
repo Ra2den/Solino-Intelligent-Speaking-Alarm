@@ -57,21 +57,27 @@ export function AlarmCreate({ alarm }: AlarmCreateProps) {
                 <div className="text-[75px] leading-none font-medium tracking-[-0.04em] max-md:text-[60px]">
                   {field.value ?? "00:00"}
                 </div>
-                <Timepicker
-                  placeholder="Bearbeiten"
-                  className={`rounded-full bg-white px-3.75 py-2.5 text-[20px] font-medium text-black transition-all duration-200 text-center`}
-                  name="time"
-                  required
-                  value={field.value}
-                  onUpdate={(data) =>
-                    field.onChange(`${data.hour}:${data.minutes}`)
-                  }
-                  options={{
-                    ui: {
-                      enableSwitchIcon: false,
-                    },
-                  }}
-                />
+                <div className="relative">
+                  <Timepicker
+                    placeholder="Bearbeiten"
+                    className={`rounded-full bg-white px-3.75 py-2.5 text-[20px] font-medium text-transparent caret-transparent transition-all duration-200 text-center placeholder:text-transparent`}
+                    name="time"
+                    value={field.value}
+                    required
+                    onUpdate={(data) =>
+                      field.onChange(`${data.hour}:${data.minutes}`)
+                    }
+                    options={{
+                      clock: { type: "24h" },
+                      ui: {
+                        enableSwitchIcon: false,
+                      },
+                    }}
+                  />
+                  <span className="pointer-events-none absolute inset-0 flex items-center justify-center text-[20px] font-medium text-black">
+                    Bearbeiten
+                  </span>
+                </div>
               </div>
             )}
           />

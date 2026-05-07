@@ -117,9 +117,8 @@ def db_update_alarm(alarm_id, time=None, label=None, recurring_days=None, active
         fields.append("label = ?")
         params.append(label)
 
-    if recurring_days is not None:
-        fields.append("recurring_days = ?")
-        params.append(json.dumps(recurring_days))
+    fields.append("recurring_days = ?")
+    params.append(json.dumps(recurring_days))
 
     if active is not None:
         fields.append("active = ?")
