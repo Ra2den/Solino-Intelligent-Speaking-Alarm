@@ -1,8 +1,12 @@
 import db
+from db_helper import validate_weekdays
 
 def add_alarm(time, label, recurring_days):
     db.db_add_alarm(time, label, recurring_days)
-    return f"Ich habe einen Wecker für {time} Uhr mit dem Label '{label}' erstellt, der sich an den Tagen{recurring_days} wiederholt ."
+    if validate_weekdays(recurring_days):
+        return f"Ich habe einen Wecker für {time} Uhr mit dem Label '{label}' erstellt, der sich an den Tagen{recurring_days} wiederholt ."
+    else:
+        return f"Die Wochentage : {recurring_days} sind im falschen Format. Sie dürfen nur die Werte [MON,TUE,WED,THU,FRI,SAT,SUN] enthalten. Führe die Funktion nochmal mit den richtigen Parametern aus."
 
 def get_all_alarms():
     alarms = db.db_get_all_alarms()

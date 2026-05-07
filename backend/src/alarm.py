@@ -15,7 +15,7 @@ import sqlite3
 import json
 
 from weatherForecast import get_current_weather, get_current_weather_from_specific_location
-from ai_db_service import add_alarm, get_active_alarms, toggle_alarm, delete_alarm_by_time
+from ai_db_service import add_alarm, get_active_alarms, toggle_alarm, delete_alarm_by_time, get_all_alarms
 from speechToText import STTService
 
 with open('./settings.json', 'r') as file:
@@ -41,6 +41,7 @@ Antworte trotzdem kurz und gefasst
 2. TOOL-DISZIPLIN: Rufe ein Tool niemals doppelt mit den gleichen Parametern auf.
 3. VERARBEITUNG: Sobald ein Tool-Ergebnis vorliegt, fasse es kurz und herzlich in einem Satz zusammen.
 4. RELEVANZ: Übergib trotz deines Witzes immer alle relevanten Daten (Uhrzeiten, Temperaturen).
+5. RÜCKGABE VON WECKERLISTEN- Wenn du Wecker auflistest, verwende keine technischen Begriffe wie "Aktiv: Nein".Sage stattdessen "schläft gerade" oder "ist bereit". Gruppiere die Wecker charmant und verwende Aufzählungszeichen, um es übersichtlich zu halten.
 
 ### SPEZIALAUFGABEN (WETTER)
 Wenn du Wetterdaten ausgibst, gib immer eine praktische Kleidungsempfehlung oder einen Tipp für Utensilien (z.B. Regenschirm, Sonnencreme, Sonnenbrille), passend zur Vorhersage. 
@@ -49,6 +50,7 @@ Gebe ALLE Wetterdaten die du bekommst an den Nutzer Weiter, also Temperatur, Him
 ### BEISPIEL-ANTWORT
 Nutzer: "Stell den Hacker auf 8 Uhr."
 Antwort: "Alles klar, dein strahlendes Erwachen ist für 8 Uhr gebucht – ich habe den Wecker gestellt, damit du nicht verschläfst!
+NOCHMAL: BENUTZE **NIEMALS** EMOJIS
 """
 )
 
@@ -56,22 +58,32 @@ Antwort: "Alles klar, dein strahlendes Erwachen ist für 8 Uhr gebucht – ich h
 
 # --- Tools ---
 @tool
-def set_alarm(uhrzeit: str, wiederholende_tage):
-    """Stellt einen Wecker für eine bestimmte Uhrzeit (Format HH:MM).Die wiederholenden Tage sind Standartmäßig None sonst ein Array im Format: [MON,TUE,WED,THU,FRI,SAT,SUN]"""
-    add_alarm(uhrzeit, "Vom LLM gestellt", wiederholende_tage)
+def set_alarm(uhrzeit: str,label: str, wiederholende_tage: list):
+    """Stellt einen Wecker für eine bestimmte Uhrzeit (Format HH:MM).
+    Frage den Nutzer, wie der Wecker heißen soll. Das ist das Label. Z.B. Uni, Arbeit, Wochenende
+    Die wiederholenden Tage sind Standartmäßig None, und nur falls der Nutzer sagt, 
+    das sich der Wecker wiederholen soll ist es ein Array im Format: [MON,TUE,WED,THU,FRI,SAT,SUN]"""
+    print(f"Wecker auf {uhrzeit} mit namen {label} wiederholend an {wiederholende_tage} gestellt")
+    add_alarm(uhrzeit, label, wiederholende_tage)
     return f"Wecker auf {uhrzeit} Uhr programmiert."
 
 @tool
-def list_alarms():
+def list_active_alarms():
     """Gibt eine Liste aller aktuell gestellten Wecker zurück."""
     active_alarms = get_active_alarms()
     if not active_alarms:
         return "Du hast aktuell keine aktiven Wecker."
-    
-    response = "Hier sind deine aktiven Wecker:\n"
-    for a in active_alarms:
-        response += f"- {a['uhrzeit']} Uhr ({a['label']})\n"
-    return response
+    return active_alarms
+
+@tool
+def list_all_alarms():
+    """Gibt eine Liste aller aktiven UND inaktiven Wecker zurück"""
+    all_alarms = get_all_alarms()
+    if not all_alarms:
+        return "Es sind gerade keine Wecker eingetragen"
+
+    return all_alarms
+
 
 @tool
 def remove_alarm_by_time(uhrzeit: str):
@@ -97,7 +109,7 @@ def get_weather_nowcast_at_location(stadt: str, region:str):
     weather_list = get_current_weather_from_specific_location(stadt, region)
     return weather_list
 
-tools = [set_alarm, get_time_now,list_alarms, remove_alarm_by_time, get_weather_nowcast, get_weather_nowcast_at_location]
+tools = [set_alarm, get_time_now,list_active_alarms, list_all_alarms, remove_alarm_by_time, get_weather_nowcast, get_weather_nowcast_at_location]
 tool_node = ToolNode(tools)
 
 
