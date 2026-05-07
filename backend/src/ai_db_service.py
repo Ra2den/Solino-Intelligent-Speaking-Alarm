@@ -1,8 +1,8 @@
 import db
 
-def add_alarm(time, label):
-    db.db_add_alarm(time, label)
-    return f"Ich habe einen Wecker für {time} Uhr mit dem Label '{label}' erstellt."
+def add_alarm(time, label, recurring_days):
+    db.db_add_alarm(time, label, recurring_days)
+    return f"Ich habe einen Wecker für {time} Uhr mit dem Label '{label}' erstellt, der sich an den Tagen{recurring_days} wiederholt ."
 
 def get_all_alarms():
     alarms = db.db_get_all_alarms()

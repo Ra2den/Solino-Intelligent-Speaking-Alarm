@@ -18,7 +18,7 @@ from weatherForecast import get_current_weather, get_current_weather_from_specif
 from ai_db_service import add_alarm, get_active_alarms, toggle_alarm, delete_alarm_by_time
 from speechToText import STTService
 
-with open('settings.json', 'r') as file:
+with open('./settings.json', 'r') as file:
     settings = json.load(file)
 if settings:
     speaker = settings["speaker"]
@@ -56,9 +56,9 @@ Antwort: "Alles klar, dein strahlendes Erwachen ist für 8 Uhr gebucht – ich h
 
 # --- Tools ---
 @tool
-def set_alarm(uhrzeit: str):
-    """Stellt einen Wecker für eine bestimmte Uhrzeit (Format HH:MM)."""
-    add_alarm(uhrzeit, "Vom LLM gestellt")
+def set_alarm(uhrzeit: str, wiederholende_tage):
+    """Stellt einen Wecker für eine bestimmte Uhrzeit (Format HH:MM).Die wiederholenden Tage sind Standartmäßig None sonst ein Array im Format: [MON,TUE,WED,THU,FRI,SAT,SUN]"""
+    add_alarm(uhrzeit, "Vom LLM gestellt", wiederholende_tage)
     return f"Wecker auf {uhrzeit} Uhr programmiert."
 
 @tool
