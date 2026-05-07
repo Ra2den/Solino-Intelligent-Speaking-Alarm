@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@import "timepicker-ui/main.css";
 
 @layer base {
   @font-face {
@@ -92,4 +93,10 @@ body,
 #root {
   width: 100%;
   height: 100%;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
 }

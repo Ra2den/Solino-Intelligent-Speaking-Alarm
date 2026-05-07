@@ -10,6 +10,23 @@ export default function BgSimulator({ children }: BgSimulatorProps) {
   const [phase, setPhase] = useState<Phase>();
 
   useEffect(() => {
+    let timeoutId: number | undefined;
+    let isCancelled = false;
+
+    const getStartOfNextDay = (now: number) => {
+      const nextDay = new Date(now);
+      nextDay.setHours(24, 0, 0, 0);
+      return nextDay.getTime();
+    };
+
+    const scheduleNextRun = (delay: number) => {
+      if (isCancelled || delay <= 0) return;
+
+      timeoutId = window.setTimeout(() => {
+        void setup();
+      }, delay);
+    };
+
     async function setup() {
       setPhase(await getPhase());
       const next = await getNextTransition();
@@ -22,7 +39,15 @@ export default function BgSimulator({ children }: BgSimulatorProps) {
       }
     }
 
-    setup();
+    void setup();
+
+    return () => {
+      isCancelled = true;
+
+      if (timeoutId !== undefined) {
+        window.clearTimeout(timeoutId);
+      }
+    };
   }, []);
 
   const getBgClass = () => {
