@@ -17,7 +17,7 @@ async function getWeatherData(
   return { sunrise: actualSunrise, sunset: actualSunset, now: actualNow, transition: actualTransition };
 }
 
-export async function getPhase(sunrise?: number, sunset?: number, now?: number, transition?: number): Promise<Phase> {
+export async function getPhase(now?: number, sunrise?: number, sunset?: number, transition?: number): Promise<Phase> {
   const { sunrise: s, sunset: ss, now: n, transition: t } = await getWeatherData(sunrise, sunset, now, transition);
 
   const isSunrise = n >= s - t && n <= s + t;

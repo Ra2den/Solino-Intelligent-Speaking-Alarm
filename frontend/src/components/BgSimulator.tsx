@@ -28,14 +28,20 @@ export default function BgSimulator({ children }: BgSimulatorProps) {
     };
 
     async function setup() {
-      setPhase(await getPhase());
-      const next = await getNextTransition();
+      try {
+        // Weather fetching is handled in phase.util.ts
+        setPhase(await getPhase());
+        const next = await getNextTransition();
+        const delay =
+          next !== undefined ? next - Date.now() : getStartOfNextDay(Date.now()) - Date.now();
 
-      if (next) {
-        const delay = next - Date.now();
-        setTimeout(() => {
-          setup(); // neu berechnen
-        }, delay);
+        scheduleNextRun(delay);
+      } catch (error) {
+        console.error("bgSimulator.setup error:", error);
+
+        // Retry after a short delay so a transient API failure does not stop
+        // the day/night cycle permanently.
+        scheduleNextRun(60 * 1000);
       }
     }
 
