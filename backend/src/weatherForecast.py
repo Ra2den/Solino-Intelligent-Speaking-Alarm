@@ -82,7 +82,7 @@ def fetch_and_parse_weather_nowcast(cords):
         f"Das Wetter in {data['name']} ist aktuell bei {round_half_up(curr_temp)} °C "
         f"Bei gefühlten {round_half_up(fells_like)} °C. "
         f"Bei hauptsächlich {weather_cond_main} und {weather_cond_description} Wetter. "
-        f"Mit Windgeschwindigkeiten von {wind_speed} km/h, aus {wind_direction} kommend."
+        f"Mit Windgeschwindigkeiten von {round_half_up(wind_speed)} km/h, aus {wind_direction} kommend."
     )
 
     print(weather_nowcaset_string)
