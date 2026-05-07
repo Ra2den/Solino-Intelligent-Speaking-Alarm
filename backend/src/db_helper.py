@@ -11,3 +11,11 @@ def parse_weekdays(db_value: Optional[str]) -> Optional[List[Weekday]]:
         return None
 
     return [Weekday(day) for day in raw_list]
+
+def validate_weekdays(recurring_days: list) -> bool:
+    if isinstance(recurring_days, list):
+        return all(isinstance(day, Weekday) for day in recurring_days)
+    if recurring_days is None:
+        print("Wecker wiederholt sich nicht")
+        return True
+    return False
