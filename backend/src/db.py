@@ -60,6 +60,10 @@ class Database:
                 item["recurring_days"] = parse_weekdays(item["recurring_days"])
             return item
 
+# Initialisiere die Datenbank und erstelle die Tabelle, falls sie nicht existiert
+db = Database()
+db.init_db()
+
 def db_add_alarm(time, label, recurring_days):
     recurring_days_json = json.dumps(recurring_days)
     alarm_id = db.execute(
@@ -127,7 +131,3 @@ def db_update_alarm(alarm_id, time=None, label=None):
     )
 
     return dict(row) if row else None
-
-# Initialisiere die Datenbank und erstelle die Tabelle, falls sie nicht existiert
-db = Database()
-db.init_db()
