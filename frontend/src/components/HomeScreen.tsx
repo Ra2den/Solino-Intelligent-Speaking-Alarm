@@ -11,13 +11,6 @@ export function HomeScreen() {
     <>
       {isCreate ? (
         <AlarmCreate
-          alarm={{
-            id: 21,
-            time: "08:00",
-            recurring_days: ["MON", "WED", "FRI"],
-            label: "Wecker 45",
-            active: true,
-          }}
           onCreate={() => setIsCreate(false)}
         />
       ) : (
