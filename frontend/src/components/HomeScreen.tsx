@@ -10,7 +10,15 @@ export function HomeScreen() {
   return (
     <>
       {isCreate ? (
-        <AlarmCreate />
+        <AlarmCreate
+          alarm={{
+            id: 21,
+            time: "08:00",
+            recurring_days: ["MON", "WED", "FRI"],
+            label: "Wecker 45",
+            active: true,
+          }}
+        />
       ) : (
         <div className="w-full h-full grid grid-cols-5 p-12">
           {/* Widgets */}

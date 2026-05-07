@@ -20,14 +20,14 @@ type WeekdayChipsProps = {
 
 export function WeekdayChips({ recurringDays, onChange }: WeekdayChipsProps) {
   return (
-    <div className="mt-6.25 flex items-center justify-between gap-2.5">
+    <div className="flex items-center justify-between gap-2.5">
       {dayChips.map((day) => {
         const isActive = recurringDays?.includes(day.value) ?? false;
 
         return (
           <button
             key={day.value}
-            className={`flex h-9.75 w-11.75 items-center justify-center bg-white px-3 py-1.25 text-[25px] leading-none font-medium transition-all duration-200 ${
+            className={`flex h-15 w-17 items-center justify-center bg-white px-3 py-1.25 text-[25px] leading-none font-medium transition-all duration-200 ${
               isActive
                 ? "rounded-[20px] text-black"
                 : "rounded-[10px] text-black opacity-50"

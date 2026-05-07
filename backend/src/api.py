@@ -53,7 +53,9 @@ def update_alarm(alarm_id: int, alarm: Alarm):
     return db.db_update_alarm(
         alarm_id=alarm_id,
         time=alarm.time,
-        label=alarm.label
+        label=alarm.label,
+        recurring_days=alarm.recurring_days,
+        active=alarm.active,
     )
 
 # Delete an alarm by ID

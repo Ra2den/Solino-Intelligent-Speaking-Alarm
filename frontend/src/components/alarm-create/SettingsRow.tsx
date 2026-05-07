@@ -15,7 +15,7 @@ export function SettingsRow({
 }) {
   return (
     <div
-      className={`flex w-full items-center justify-between bg-white/85 p-3.75 text-[#ef5c58] mix-blend-soft-light ${
+      className={`flex w-full items-center justify-between bg-white/85 p-3.75 text-black mix-blend-soft-light ${
         topRounded ? "rounded-t-[15px] rounded-b-[5px]" : ""
       } ${bottomRounded ? "rounded-b-[15px] rounded-t-[5px]" : ""} ${
         !topRounded && !bottomRounded ? "rounded-[5px]" : ""

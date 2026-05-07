@@ -4,18 +4,14 @@ import {
   type Alarm,
   type WeekdayArray,
 } from "../../models/alarm/alarm.model";
-import pauseIcon from "../../assets/alarm-create/pause.svg";
 import tagIcon from "../../assets/alarm-create/tag.svg";
-import bellIcon from "../../assets/alarm-create/bell.svg";
-import plusIcon from "../../assets/alarm-create/plus.svg";
-import { Controller, useForm, type SubmitHandler } from "react-hook-form";
+import { Controller, useForm } from "react-hook-form";
+import { useEffect } from "react";
 import { SettingsRow } from "./SettingsRow";
 import { WeekdayChips } from "./WeekdayChips";
 import { ActionPill } from "./ActionPill";
 import { Timepicker } from "timepicker-ui-react";
-import { useEffect, useState } from "react";
 import { alarmsService } from "../../services/alarms.service";
-import { AlarmCard } from "../alarm/AlarmCard";
 
 type Inputs = {
   time: string;
@@ -28,96 +24,121 @@ type AlarmCreateProps = {
 };
 
 export function AlarmCreate({ alarm }: AlarmCreateProps) {
-  const { handleSubmit, control } = useForm<Inputs>();
-  const onSubmit: SubmitHandler<Inputs> = (data) => {
-    const alarm = AlarmCreateSchema.parse({
-      time: data.time,
-      recurring_days: data.recurring_days,
-      label: "test",
-    });
-    alarmsService.createAlarm(alarm);
-  };
-  const timepickerContainerId = "alarm-create-timepicker-inline";
-
-  // Temp
-  const [alarms, setAlarms] = useState<Alarm[]>();
+  const { handleSubmit, control, reset } = useForm<Inputs>({
+    defaultValues: {
+      time: alarm?.time ?? "00:00",
+      recurring_days: alarm?.recurring_days ?? null,
+      label: alarm?.label ?? "Wecker 1",
+    },
+  });
 
   useEffect(() => {
-    alarmsService.getAlarms().then((data) => {
-      setAlarms(data);
-      console.log(data);
+    reset({
+      time: alarm?.time ?? "00:00",
+      recurring_days: alarm?.recurring_days ?? null,
+      label: alarm?.label ?? "Wecker 1",
     });
-  }, []);
+  }, [alarm, reset]);
 
   return (
     <>
-      <form onSubmit={handleSubmit(onSubmit)} className="flex">
-        <Controller
-          control={control}
-          defaultValue={alarm?.time}
-          name="time"
-          render={({ field }) => (
-            <div className="space-y-4">
-              <Timepicker
-                className="sr-only"
-                name="time"
-                required
-                value={field.value}
-                onUpdate={(data) =>
-                  field.onChange(`${data.hour}:${data.minutes}`)
-                }
-                options={{
-                  ui: {
-                    enableSwitchIcon: false,
-                    inline: {
-                      enabled: true,
-                      containerId: timepickerContainerId,
-                      autoUpdate: true,
-                    },
-                  },
-                }}
-              />
-              <div
-                className="min-h-[320px] rounded-[32px] bg-white/6 p-4"
-                id={timepickerContainerId}
-              />
-              {/* Uhrzeit */}
-              <div className="text-[75px] leading-none font-medium tracking-[-0.04em] max-md:text-[60px]">
-                {field.value ?? "00:00"}
-              </div>
-            </div>
-          )}
-        />
-        <div>
+      <form
+        onSubmit={handleSubmit(onSubmit)}
+        className="w-full h-full flex items-center justify-center"
+      >
+        <div className="flex gap-52">
+          {/* Time */}
           <Controller
             control={control}
-            defaultValue={alarm?.recurring_days ?? null}
-            name="recurring_days"
+            name="time"
             render={({ field }) => (
-              <WeekdayChips
-                recurringDays={field.value}
-                onChange={field.onChange}
-              />
+              <div className="flex flex-col items-center justify-center gap-5">
+                {/* Uhrzeit */}
+                <div className="text-[75px] leading-none font-medium tracking-[-0.04em] max-md:text-[60px]">
+                  {field.value ?? "00:00"}
+                </div>
+                <Timepicker
+                  placeholder="Bearbeiten"
+                  className={`rounded-full bg-white px-3.75 py-2.5 text-[20px] font-medium text-black transition-all duration-200 text-center`}
+                  name="time"
+                  required
+                  value={field.value}
+                  onUpdate={(data) =>
+                    field.onChange(`${data.hour}:${data.minutes}`)
+                  }
+                  options={{
+                    ui: {
+                      enableSwitchIcon: false,
+                    },
+                  }}
+                />
+              </div>
             )}
           />
-          <SettingsRow
-            icon={pauseIcon}
-            label="Schlummern"
-            topRounded={true}
-            trailing={plusIcon}
-          />
-          <SettingsRow icon={tagIcon} label="Name" />
-          <SettingsRow icon={bellIcon} label="Ton" bottomRounded={true} />
-          <div className="relative z-10 mt-auto flex justify-center pt-12.5">
-            <ActionPill type="submit">Speichern</ActionPill>
+          <div className="flex flex-col gap-3">
+            {/* Weekday */}
+            <Controller
+              control={control}
+              name="recurring_days"
+              render={({ field }) => (
+                <WeekdayChips
+                  recurringDays={field.value}
+                  onChange={field.onChange}
+                />
+              )}
+            />
+            <div className="flex flex-col gap-1">
+              {/* <SettingsRow
+                icon={pauseIcon}
+                label="Schlummern"
+                topRounded={true}
+                trailing={plusIcon}
+              /> */}
+              <Controller
+                control={control}
+                name="label"
+                render={({ field }) => (
+                  <SettingsRow icon={tagIcon} label={field.value} />
+                )}
+              />
+              {/* <SettingsRow icon={bellIcon} label="Ton" bottomRounded={true} /> */}
+            </div>
+            <div className="relative z-10 mt-auto flex justify-center pt-12.5">
+              <ActionPill type="submit">Speichern</ActionPill>
+            </div>
           </div>
         </div>
       </form>
-      {alarms?.map((alarm) => {
-        <AlarmCard alarm={alarm}></AlarmCard>;
-      })}
     </>
   );
+
+  async function onSubmit(data: Inputs): Promise<void> {
+    if (typeof alarm?.id === "number") {
+      // Update existing alarm
+      const submittedAlarm = AlarmSchema.parse({
+        id: alarm.id,
+        time: data.time,
+        recurring_days: data.recurring_days,
+        label: data.label,
+        active: alarm.active ?? true,
+      });
+      const updatedAlarm = await alarmsService.updateAlarm(
+        alarm.id,
+        submittedAlarm,
+      );
+      console.log("Alarm updated:", updatedAlarm);
+      return;
+    }
+    const submittedAlarm = AlarmCreateSchema.parse({
+      time: data.time,
+      recurring_days: data.recurring_days,
+      label: data.label,
+    });
+
+    // Logging
+    const createdAlarm = await alarmsService.createAlarm(submittedAlarm);
+    console.log("Alarm created:", createdAlarm);
+  }
 }
 
 export default AlarmCreate;

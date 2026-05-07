@@ -101,7 +101,7 @@ def db_delete_alarm_by_time(time):
     db.execute("DELETE FROM alarms WHERE id = ?", (alarm["id"],))
     return alarm
 
-def db_update_alarm(alarm_id, time=None, label=None):
+def db_update_alarm(alarm_id, time=None, label=None, recurring_days=None, active=None):
     fields = []
     params = []
 
@@ -112,6 +112,14 @@ def db_update_alarm(alarm_id, time=None, label=None):
     if label is not None:
         fields.append("label = ?")
         params.append(label)
+
+    if recurring_days is not None:
+        fields.append("recurring_days = ?")
+        params.append(json.dumps(recurring_days))
+
+    if active is not None:
+        fields.append("active = ?")
+        params.append(active)
 
     if not fields:
         return None
@@ -126,7 +134,7 @@ def db_update_alarm(alarm_id, time=None, label=None):
         (alarm_id,)
     )
 
-    return dict(row) if row else None
+    return row
 
 # Initialisiere die Datenbank und erstelle die Tabelle, falls sie nicht existiert
 db = Database()
