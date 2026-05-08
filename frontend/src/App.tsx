@@ -3,6 +3,10 @@ import { Agent } from "./components/agent/Agent";
 import TimeWidget from "./components/TimeWidget";
 import BgSimulator from "./components/BgSimulator";
 import AlarmWidget from "./components/alarm/AlarmWidget";
+import { AlarmListButton } from "./components/buttons/AlarmListButton";
+import { AlarmAddButton } from "./components/buttons/AlarmAddButton";
+import { SettingsButton } from "./components/buttons/SettingsButton";
+
 
 function App() {
   return (
@@ -16,7 +20,11 @@ function App() {
               <TimeWidget locale="de-DE" />
             </div>
             {/* Buttons */}
-            <div className="row-span-2 bg-green-300">{/* TODO Buttons */}</div>
+            <div className="row-span-2 justify-between items-center flex">
+              <AlarmListButton />
+              <AlarmAddButton />
+              <SettingsButton />
+            </div>
             <div className="row-span-3">
               <AlarmWidget></AlarmWidget>
             </div>
