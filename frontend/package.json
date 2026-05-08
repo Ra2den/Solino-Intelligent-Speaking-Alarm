@@ -8,7 +8,6 @@
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "test:phase": "tsc -p tsconfig.test.json && node --test .test-build/tests/phase.util.test.js"
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.2.4",
