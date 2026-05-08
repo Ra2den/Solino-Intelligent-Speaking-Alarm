@@ -4,15 +4,15 @@ import solinoRing from "../../assets/agent/solino_ring.svg";
 import expressionDefault from "../../assets/agent/expression_default.svg";
 import expressionRaisedBrows from "../../assets/agent/expression_guard.svg";
 import expressionSleeping from "../../assets/agent/expression_sleeping.svg";
-import { useLayoutEffect, useRef, useState } from "react";
+import { useLayoutEffect, useRef } from "react";
 import gsap from "gsap";
 import { useWeatherNowcast } from "../../hooks/weather/useWeatherNowcast";
 import cloudM from "../../assets/agent/cloud_m.png";
 import cloudS from "../../assets/agent/cloud_s.png";
 import raindropIcon from "../../assets/agent/raindrop.svg";
 import { TemperatureDisplay } from "./TemperatureDisplay";
-import type { Phase } from "../../models/simulator/phase.model.js";
-import { getNextTransition, getPhase } from "../../utils/phase.util.js";
+import { PhaseSchema, type Phase } from "../../models/simulator/phase.model.js";
+import { usePhase } from "../../hooks/usePhase";
 
 const RAIN_DROP_POSITIONS = [
   "absolute -bottom-9 left-[5%] z-0 w-[20%]",
@@ -24,7 +24,7 @@ const RAIN_DROP_POSITIONS = [
 
 export function Agent() {
   const { data: weatherData, isLoading, error } = useWeatherNowcast();
-  const [phase, setPhase] = useState<Phase>();
+  const phase = usePhase();
 
   // GSAP
   const weatherLayerRef = useRef<HTMLDivElement | null>(null);
@@ -43,22 +43,6 @@ export function Agent() {
   const isWeatherUnavailable = !weatherData || !condition;
 
   useLayoutEffect(() => {
-
-    async function setup() {
-        setPhase(await getPhase());
-  
-        const next = await getNextTransition();
-  
-        if (next) {
-          const delay = next - Date.now();
-          setTimeout(() => {
-            setup(); // neu berechnen
-          }, delay);
-     }
-    }
-    setup();
-
-
     if (!shouldAnimateRain || !weatherLayerRef.current) return;
 
     const ctx = gsap.context(() => {
@@ -116,15 +100,17 @@ export function Agent() {
         </div>
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
           <img
-            className={`${phase == "Night" ? "hidden" : "visible"} w-130 max-w-none object-contain ${animationsEnabled ? "animate-[spin_25s_linear_infinite]" : ""}`}
+            className={`${phase === PhaseSchema.parse("Night") ? "hidden" : "visible"} w-130 max-w-none object-contain ${animationsEnabled ? "animate-[spin_25s_linear_infinite]" : ""}`}
             src={solinoRing}
             alt="Solino Ring"
           />
         </div>
-        <div className="absolute top-1/2 left-1/2 w-90 -translate-x-1/2 -translate-y-1/2">
+        <div
+          className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 ${phase === PhaseSchema.parse("Night") ? "w-130" : "w-90"}`}
+        >
           <img
             className="w-full object-contain"
-            src={phase === "Night" ? molinoBase : solinoBase}
+            src={phase === PhaseSchema.parse("Night") ? molinoBase : solinoBase}
             alt="Solino Base"
           />
           {getExpression(false, phase)}
@@ -134,7 +120,6 @@ export function Agent() {
   );
 
   function getExpression(isGuard: boolean, currentPhase: Phase | undefined) {
-
     if (isGuard) {
       return (
         <img
@@ -143,14 +128,14 @@ export function Agent() {
           alt="Expression of Solino with raised Eyebrows"
         />
       );
-    } else if (currentPhase === "Night") {
-        return (
+    } else if (currentPhase === PhaseSchema.parse("Night")) {
+      return (
         <img
           className="absolute top-[25%] left-1/2 z-1 w-[25%] -translate-x-1/2"
           src={expressionSleeping}
           alt="Expression of Solino with raised Eyebrows"
         />
-        );
+      );
     } else {
       return (
         <img

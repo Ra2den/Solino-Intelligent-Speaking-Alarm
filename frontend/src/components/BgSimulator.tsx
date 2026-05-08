@@ -1,60 +1,12 @@
-import { useEffect, useState, type ReactNode } from "react";
-import type { Phase } from "../models/simulator/phase.model.js";
-import { getNextTransition, getPhase } from "../utils/phase.util.js";
+import type { ReactNode } from "react";
+import { usePhase } from "../hooks/usePhase";
 
 type BgSimulatorProps = {
   children: ReactNode;
 };
 
 export default function BgSimulator({ children }: BgSimulatorProps) {
-  const [phase, setPhase] = useState<Phase>();
-
-  useEffect(() => {
-    let timeoutId: number | undefined;
-    let isCancelled = false;
-
-    const getStartOfNextDay = (now: number) => {
-      const nextDay = new Date(now);
-      nextDay.setHours(24, 0, 0, 0);
-      return nextDay.getTime();
-    };
-
-    const scheduleNextRun = (delay: number) => {
-      if (isCancelled || delay <= 0) return;
-
-      timeoutId = window.setTimeout(() => {
-        void setup();
-      }, delay);
-    };
-
-    async function setup() {
-      try {
-        // Weather fetching is handled in phase.util.ts
-        setPhase(await getPhase());
-        const next = await getNextTransition();
-        const delay =
-          next !== undefined ? next - Date.now() : getStartOfNextDay(Date.now()) - Date.now();
-
-        scheduleNextRun(delay);
-      } catch (error) {
-        console.error("bgSimulator.setup error:", error);
-
-        // Retry after a short delay so a transient API failure does not stop
-        // the day/night cycle permanently.
-        scheduleNextRun(60 * 1000);
-      }
-    }
-
-    void setup();
-
-    return () => {
-      isCancelled = true;
-
-      if (timeoutId !== undefined) {
-        window.clearTimeout(timeoutId);
-      }
-    };
-  }, []);
+  const phase = usePhase();
 
   const getBgClass = () => {
     if (phase == "Sunrise")
