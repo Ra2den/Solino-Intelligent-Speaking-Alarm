@@ -1,0 +1,43 @@
+import sqlite3
+from contextlib import contextmanager
+from pathlib import Path
+
+
+DB_PATH = Path(__file__).resolve().with_name("alarms.db")
+
+
+class Database:
+    def __init__(self, db_path=DB_PATH):
+        self.db_path = str(db_path)
+
+    @contextmanager
+    def connect(self):
+        conn = sqlite3.connect(self.db_path)
+        conn.row_factory = sqlite3.Row
+        try:
+            yield conn
+            conn.commit()
+        except Exception:
+            conn.rollback()
+            raise
+        finally:
+            conn.close()
+
+    def execute(self, query, params=()):
+        with self.connect() as conn:
+            cursor = conn.execute(query, params)
+            return cursor.lastrowid
+
+    def fetch_all(self, query, params=()):
+        with self.connect() as conn:
+            cursor = conn.execute(query, params)
+            return [dict(row) for row in cursor.fetchall()]
+
+    def fetch_one(self, query, params=()):
+        with self.connect() as conn:
+            cursor = conn.execute(query, params)
+            row = cursor.fetchone()
+            return dict(row) if row else None
+
+
+db = Database()

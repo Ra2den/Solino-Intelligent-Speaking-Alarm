@@ -6,22 +6,28 @@ from langchain_core.tools import tool
 from langgraph.graph import StateGraph, START, END
 from langgraph.prebuilt import ToolNode
 from langchain_core.messages import SystemMessage
-from langgraph.checkpoint.sqlite import SqliteSaver
 import os
 import datetime
-import time
 from datetime import datetime
-import sqlite3
 import json
+import subprocess
+from pathlib import Path
+import shutil
 
+import alarm_service
 from weatherForecast import get_current_weather, get_current_weather_from_specific_location
-from ai_db_service import add_alarm, get_active_alarms, toggle_alarm, delete_alarm_by_time, get_all_alarms
 from speechToText import STTService
 
 with open('./settings.json', 'r') as file:
     settings = json.load(file)
 if settings:
     speaker = settings["speaker"]
+
+BASE_DIR = Path(__file__).resolve().parent
+BACKEND_DIR = BASE_DIR.parent
+RESPONSE_WAV_PATH = BASE_DIR / "response.wav"
+ALARM_SOUND_PATH = BACKEND_DIR / "alarm_sound.flac"
+ALARM_SOUND_FALLBACK_PATH = BACKEND_DIR / "alarm_sound.mp3"
 
 
 system_message = SystemMessage(
@@ -74,13 +80,27 @@ def set_alarm(uhrzeit: str,label: str, wiederholende_tage: list):
     Die wiederholenden Tage sind Standartmäßig None, und nur falls der Nutzer sagt, 
     das sich der Wecker wiederholen soll ist es ein Array im Format: [MON,TUE,WED,THU,FRI,SAT,SUN]"""
     print(f"Wecker auf {uhrzeit} mit namen {label} wiederholend an {wiederholende_tage} gestellt")
-    add_alarm(uhrzeit, label, wiederholende_tage)
-    return f"Wecker auf {uhrzeit} Uhr programmiert."
+
+    alarm = alarm_service.add_alarm(uhrzeit, label, wiederholende_tage)
+    if alarm is None:
+        return (
+            f"Die Wochentage : {wiederholende_tage} sind im falschen Format. "
+            "Sie dürfen nur die Werte [MON,TUE,WED,THU,FRI,SAT,SUN] enthalten. "
+            "Führe die Funktion nochmal mit den richtigen Parametern aus."
+        )
+
+    if wiederholende_tage:
+        return (
+            f"Ich habe einen Wecker für {uhrzeit} Uhr mit dem Label '{label}' erstellt, "
+            f"der sich an den Tagen {wiederholende_tage} wiederholt."
+        )
+
+    return f"Ich habe einen Wecker für {uhrzeit} Uhr mit dem Label '{label}' erstellt."
 
 @tool
 def list_active_alarms():
     """Gibt eine Liste aller aktuell gestellten Wecker zurück."""
-    active_alarms = get_active_alarms()
+    active_alarms = alarm_service.get_active_alarms()
     if not active_alarms:
         return "Du hast aktuell keine aktiven Wecker."
     return active_alarms
@@ -88,18 +108,26 @@ def list_active_alarms():
 @tool
 def list_all_alarms():
     """Gibt eine Liste aller aktiven UND inaktiven Wecker zurück"""
-    all_alarms = get_all_alarms()
+    all_alarms = alarm_service.get_all_alarms()
     if not all_alarms:
-        return "Es sind gerade keine Wecker eingetragen"
+        return "Es sind keine Wecker gespeichert."
 
-    return all_alarms
+    return "Folgende Wecker sind gespeichert:\n" + "\n".join(
+        [
+            f"{alarm['id']}: {alarm['time']} Uhr - {alarm['label']} "
+            f"(Aktiv: {'Ja' if alarm['active'] else 'Nein'})"
+            for alarm in all_alarms
+        ]
+    )
 
 
 @tool
 def remove_alarm_by_time(uhrzeit: str):
     """Löscht einen Wecker basierend auf der Uhrzeit (Format HH:MM)."""
-    res = delete_alarm_by_time(uhrzeit)
-    return res
+    success = alarm_service.delete_alarm_by_time(uhrzeit)
+    if success:
+        return f"Ich habe den Wecker für {uhrzeit} Uhr gelöscht."
+    return f"Ich konnte keinen Wecker für {uhrzeit} Uhr finden."
     
 
 @tool
@@ -160,9 +188,6 @@ from langgraph.checkpoint.memory import MemorySaver
 
 memory = MemorySaver()
 
-#checkpoint_conn = sqlite3.connect("checkpoints.db", check_same_thread=False)
-#memory = SqliteSaver(checkpoint_conn)
-
 app = workflow.compile(checkpointer=memory)
 
 config = {"configurable": {"thread_id": "haupt_user_session"}}
@@ -171,39 +196,75 @@ def speak(text):
     #print(f"Generiere Audio für: {text}...")
     # 'aplay' ist der Standard-Player auf Linux, 'afplay' auf Mac
     if speaker == "male":
-        model = "--model models/de_DE-thorsten-high.onnx"
+        model_path = BASE_DIR / "models" / "de_DE-thorsten-high.onnx"
     else:
-        model = "--model models/de_DE-kerstin-low.onnx"
-        
-    command = f'echo "{text}" | piper {model} --output_file response.wav && afplay response.wav'
-    os.system(command)
+        model_path = BASE_DIR / "models" / "de_DE-kerstin-low.onnx"
+
+    subprocess.run(
+        [
+            "piper",
+            "--model",
+            str(model_path),
+            "--output_file",
+            str(RESPONSE_WAV_PATH),
+        ],
+        input=text,
+        text=True,
+        check=True,
+    )
+    _play_audio_file(RESPONSE_WAV_PATH)
+
+
+def _play_audio_file(audio_path):
+    player = shutil.which("afplay") or shutil.which("aplay")
+    if not player:
+        raise RuntimeError("Kein Audio-Player gefunden. Erwartet wurde 'afplay' oder 'aplay'.")
+
+    completed = subprocess.run(
+        [player, str(audio_path)],
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    if completed.returncode != 0:
+        error_output = (completed.stderr or completed.stdout).strip()
+        raise RuntimeError(
+            f"Audio konnte nicht abgespielt werden: {audio_path}. "
+            f"Player: {player}. Fehler: {error_output or 'Unbekannter Fehler'}"
+        )
+
+
+def _play_alarm_sound():
+    candidate_paths = [ALARM_SOUND_PATH, ALARM_SOUND_FALLBACK_PATH]
+    errors = []
+
+    for candidate_path in candidate_paths:
+        if not candidate_path.exists():
+            errors.append(f"Datei nicht gefunden: {candidate_path}")
+            continue
+
+        try:
+            _play_audio_file(candidate_path)
+            print(f"Alarm-Sound abgespielt: {candidate_path.name}")
+            return
+        except Exception as exc:
+            errors.append(str(exc))
+
+    print("Alarm-Sound konnte nicht abgespielt werden.")
+    for error in errors:
+        print(f"- {error}")
 
 def alarm_monitor():
-    print("Wecker-Monitor aktiv und wartet...")
-    last_triggered_minute = ""
+    alarm_service.monitor_alarms(on_alarm_triggered=_handle_triggered_alarm)
 
-    while True:
-        now_dt = datetime.now()
-        now_time = now_dt.strftime("%H:%M")
-        
-        if now_time != last_triggered_minute:
-            active_alarms = get_active_alarms()
-            
-            for alarm in active_alarms:
-                if alarm['time'] == now_time:
-                    wake_up(now_time, alarm["label"])
-                    
-                    # Status in DB aktualisieren
-                    toggle_alarm(alarm['id'])
-                    
-                    last_triggered_minute = now_time
-        
-        time.sleep(10)
+
+def _handle_triggered_alarm(alarm):
+    wake_up(alarm["time"], alarm["label"])
 
 def wake_up(time, alarm_label=""):
     print(f"!!! ALARM !!! Es ist {time} Uhr!")
 
-    os.system("afplay alarm_sound.flac") 
+    _play_alarm_sound()
 
     """Wird vom Monitor aufgerufen. Susonne prüft das Wetter und weckt dich dann."""
     
