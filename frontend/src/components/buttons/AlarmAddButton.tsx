@@ -15,7 +15,7 @@ export function AlarmAddButton({ onClick, label = "Neuer Wecker" }: AlarmAddButt
             <img
                 src={AlarmAddIcon}
                 alt=""
-                className="w-12.5 h-12.5"
+                className="w-17.5 h-17.5"
                 aria-hidden="true"
             />
         </button>
