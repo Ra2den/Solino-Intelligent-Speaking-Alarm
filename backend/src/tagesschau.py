@@ -1,9 +1,10 @@
 import requests
 import json
-from schemas.tagesschau_schema import NewsHeadline
+from schemas.tagesschau_schema import NewsHeadline, DetailedNews
 
 BASE_URL = "https://www.tagesschau.de/api2u"
 NO_TAGESSCHAU_ERROR_MSG = "Fehler beim Abrufen der aktuellen Tagesschau Daten"
+BANNED_NEWS_TAGS = ["Wetter"]
 
 def fetch_homepage_from_tagesschau():
     response = requests.get(f"{BASE_URL}/homepage")
@@ -31,9 +32,13 @@ def get_tagesschau_homepage():
     headlines_short = []
 
     for headline in news_data['news']:
+        if any(tag['tag'] in BANNED_NEWS_TAGS for tag in headline['tags']):
+            continue
+
         current_headline = NewsHeadline(
-            time = headline['date'],
-            headline = headline['title'],
+            id=headline['externalId'],
+            time=headline['date'],
+            headline=headline['title'],
         )
 
         headlines_short.append(current_headline)
@@ -41,12 +46,37 @@ def get_tagesschau_homepage():
     print(headlines_short)
     return headlines_short
 
+def get_full_news_from_headline_id(id):
+    print(id)
+    news_data = fetch_homepage_from_tagesschau()
+
+    for headline in news_data['news']:
+        if (headline['externalId'] == id):
+            content = ""
+
+            for line in headline['content']:
+                if (line['type'] == "text"):
+                    content += line['value']
+
+            current_headline = DetailedNews(
+                id = headline['externalId'],
+                time = headline['date'],
+                headline = headline['title'],
+                content = content
+            )
+            
+            print(current_headline)
+            return current_headline
+
+    return "Keine Infos zur Schlagzeile gefunden"
+
 def get_news():
     news_data = fetch_news_from_tagesschau()
     headlines_short = []
 
     for headline in news_data['news']:
         current_headline = NewsHeadline(
+            id = headline['externalId'],
             time = headline['date'],
             headline = headline['title'],
         )

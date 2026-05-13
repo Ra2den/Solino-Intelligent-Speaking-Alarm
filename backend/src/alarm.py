@@ -15,7 +15,7 @@ import sqlite3
 import json
 
 from weatherForecast import get_current_weather, get_current_weather_from_specific_location
-from tagesschau import get_tagesschau_homepage
+from tagesschau import get_tagesschau_homepage, get_full_news_from_headline_id
 from ai_db_service import add_alarm, get_active_alarms, toggle_alarm, delete_alarm_by_time
 from speechToText import STTService
 
@@ -100,11 +100,17 @@ def get_weather_nowcast_at_location(stadt: str, region:str):
 
 @tool
 def get_latest_news():
-    """Gib die aktuellen Nachtrichten zurück"""
+    """Gibt die aktuellen Nachtrichten zurück"""
     news_list = get_tagesschau_homepage()
     return news_list
 
-tools = [set_alarm, get_time_now,list_alarms, remove_alarm_by_time, get_weather_nowcast, get_weather_nowcast_at_location, get_latest_news]
+@tool
+def get_detailed_headline_news(id: str):
+    """Gibt eine detailierte Übersicht für eine bestimmte Schlagzeile zurück. Hier muss nach einer bereits vorgelesenen Schlagzeile gefragt werden."""
+    detailed_headline = get_full_news_from_headline_id(id)
+    return detailed_headline
+
+tools = [set_alarm, get_time_now,list_alarms, remove_alarm_by_time, get_weather_nowcast, get_weather_nowcast_at_location, get_latest_news, get_detailed_headline_news]
 tool_node = ToolNode(tools)
 
 
