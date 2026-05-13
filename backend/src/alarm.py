@@ -15,6 +15,7 @@ import sqlite3
 import json
 
 from weatherForecast import get_current_weather, get_current_weather_from_specific_location
+from tagesschau import get_tagesschau_homepage
 from ai_db_service import add_alarm, get_active_alarms, toggle_alarm, delete_alarm_by_time
 from speechToText import STTService
 
@@ -93,11 +94,17 @@ def get_weather_nowcast():
 
 @tool
 def get_weather_nowcast_at_location(stadt: str, region:str):
-    """"Gibt das aktuelle Wetter in einer bestimmten Stadt zurück. Hier muss unbedingt Stadt, und Region übergeben werden"""
+    """Gibt das aktuelle Wetter in einer bestimmten Stadt zurück. Hier muss unbedingt Stadt, und Region übergeben werden"""
     weather_list = get_current_weather_from_specific_location(stadt, region)
     return weather_list
 
-tools = [set_alarm, get_time_now,list_alarms, remove_alarm_by_time, get_weather_nowcast, get_weather_nowcast_at_location]
+@tool
+def get_latest_news():
+    """Gib die aktuellen Nachtrichten zurück"""
+    news_list = get_tagesschau_homepage()
+    return news_list
+
+tools = [set_alarm, get_time_now,list_alarms, remove_alarm_by_time, get_weather_nowcast, get_weather_nowcast_at_location, get_latest_news]
 tool_node = ToolNode(tools)
 
 
@@ -147,7 +154,7 @@ config = {"configurable": {"thread_id": "haupt_user_session"}}
 
 def speak(text):
     #print(f"Generiere Audio für: {text}...")
-    # 'aplay' ist der Standard-Player auf Linux, 'afplay' auf Mac
+    # 'aplay' ist der Standard-Player auf Linux (pw-play funktioniert aber besser), 'afplay' auf Mac
     if speaker == "male":
         model = "--model models/de_DE-thorsten-high.onnx"
     else:
