@@ -10,6 +10,7 @@ import { useWeatherNowcast } from "../../hooks/weather/useWeatherNowcast";
 import cloudM from "../../assets/agent/cloud_m.png";
 import cloudS from "../../assets/agent/cloud_s.png";
 import raindropIcon from "../../assets/agent/raindrop.svg";
+import thunderbolt from "../../assets/agent/thunderbolt.svg";
 import { TemperatureDisplay } from "./TemperatureDisplay";
 import { PhaseSchema, type Phase } from "../../models/simulator/phase.model.js";
 import { usePhase } from "../../hooks/usePhase";
@@ -211,6 +212,15 @@ export function Agent() {
             alt="Raindrop"
           />
         ))}
+
+        {/*Thunderbolt*/} 
+        {condition === "Thunderstorm" && startIndex%2 == 0 && ( //nur an jeder 2. Wolke
+          <img
+            src={thunderbolt}
+            alt="Thunderbolt"
+            className="absolute bottom-[-25%] left-[40%] z-0 w-[20%]"
+            /> 
+        )}
       </>
     );
   }
