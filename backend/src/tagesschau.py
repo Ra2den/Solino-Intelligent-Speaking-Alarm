@@ -90,12 +90,18 @@ def extract_news_headlines_from_json(news_json):
 
 def get_tagesschau_homepage():
     news_data = fetch_homepage_from_tagesschau()
-    headlines =''# extract_news_headlines_from_json(news_data[NEWS])
+    if (news_data == NO_TAGESSCHAU_ERROR_MSG):
+        return news_data
+
+    headlines = extract_news_headlines_from_json(news_data[NEWS])
     print(headlines)
     return headlines
 
 def search_news(searchText):
     news_data = fetch_searched_news(searchText)
+    if (news_data == NO_TAGESSCHAU_ERROR_MSG):
+        return news_data
+
     headlines = extract_news_headlines_from_json(news_data[SEARCH_RESULTS])
     print(headlines)
     return headlines
