@@ -12,6 +12,30 @@ API_KEY = os.getenv("API_KEY")
 BASE_URL = 'https://api.openweathermap.org/data/2.5/'
 NO_WEATHER_ERROR_MSG = "Fehler beim Abrufen der aktuellen Wetterdaten"
 
+WIND_DIRECTIONS = ['Norden', 'Nord-Nord-Ost', 'Nord-Ost', 'Ost-Nord-Ost', 
+                   'Osten', 'Ost-Süd-Ost', 'Süd-Ost', 'Süd-Süd-Ost', 
+                   'Süden', 'Süd-Süd-West', 'Süd-West', 'West-Süd-West', 
+                   'Westen', 'West-Nord-West', 'Nord-West', 'Nord-Nord-West']
+
+# --- Constants for json fetching ---
+
+DATE_TIME = 'dt'
+WEATHER = 'weather'
+WEATHER_CONDITION = 'main'
+WEATHER_DESCRIPTION = 'description'
+WEATHER_TIME = 'sys'
+TEMPERATURE = 'temp'
+TEMPERATURE_FEELS_LIKE = 'feels_like'
+WIND = 'wind'
+WIND_SPEED = 'speed'
+WIND_DIRECTION = 'deg'
+SUNRISE = 'sunrise'
+SUNSET = 'sunset'
+CITY = 'city'
+CITY_NAME = 'name'
+REGION = 'region'
+FORECAST_LIST = 'list'
+
 # --- get Location from IP ---
 
 def get_public_ip():
@@ -31,9 +55,9 @@ def get_city_from_ip():
     if response['status'] == 'success':
         print(response['country'])
         print(response['timezone'])
-        print(response["city"])
-        print(response["regionName"])
-        print(response["region"])
+        print(response['city'])
+        print(response['regionName'])
+        print(response['region'])
         return response
 
 def get_cords_from_location(city, region):
@@ -47,7 +71,7 @@ def get_cords_from_ip_location():
         print("City not found by ip, using data from default City (Karlsruhe)")
         return get_cords_from_location('Karlsruhe', 'Germany')
 
-    return get_cords_from_location(location_from_ip["city"], location_from_ip["region"])
+    return get_cords_from_location(location_from_ip[CITY], location_from_ip[REGION])
 
 # --- weather nowcast operations ---
 
@@ -66,17 +90,17 @@ def fetch_and_parse_weather_nowcast(cords):
     if data == NO_WEATHER_ERROR_MSG:
         return data
 
-    curr_temp = convert_kelvin_to_celsius(data['main']['temp'])
-    fells_like = convert_kelvin_to_celsius(data['main']['feels_like'])
+    curr_temp = convert_kelvin_to_celsius(data[WEATHER_CONDITION][TEMPERATURE])
+    fells_like = convert_kelvin_to_celsius(data[WEATHER_CONDITION][TEMPERATURE_FEELS_LIKE])
 
-    weather_cond_main = data['weather'][0]['main']
-    weather_cond_description = data['weather'][0]['description']
+    weather_cond_main = data[WEATHER][0][WEATHER_CONDITION]
+    weather_cond_description = data[WEATHER][0][WEATHER_DESCRIPTION]
 
-    wind_speed = convert_ms_to_kmh(data['wind']['speed'])
-    wind_direction = deg_to_compass(data['wind']['deg'])
+    wind_speed = convert_ms_to_kmh(data[WIND][WIND_SPEED])
+    wind_direction = deg_to_compass(data[WIND][WIND_DIRECTION])
 
     weather_nowcaset_string = (
-        f"Das Wetter in {data['name']} ist aktuell bei {round_half_up(curr_temp)} °C "
+        f"Das Wetter in {data[CITY_NAME]} ist aktuell bei {round_half_up(curr_temp)} °C "
         f"Bei gefühlten {round_half_up(fells_like)} °C. "
         f"Bei hauptsächlich {weather_cond_main} und {weather_cond_description} Wetter. "
         f"Mit Windgeschwindigkeiten von {wind_speed} km/h, aus {wind_direction} kommend."
@@ -92,11 +116,11 @@ def get_current_weather_for_api():
         return data
 
     weather_nowcast_data = WeatherNowcast(
-        time = convert_timestamp_to_iso(data['dt']),
-        temperature = round_half_up(convert_kelvin_to_celsius(data['main']['temp'])),
-        feels_like = round_half_up(convert_kelvin_to_celsius(data['main']['feels_like'])),
-        weather_condition = data['weather'][0]['main'],
-        weather_description = data['weather'][0]['description']
+        time = convert_timestamp_to_iso(data[DATE_TIME]),
+        temperature = round_half_up(convert_kelvin_to_celsius(data[WEATHER_CONDITION][TEMPERATURE])),
+        feels_like = round_half_up(convert_kelvin_to_celsius(data[WEATHER_CONDITION][TEMPERATURE_FEELS_LIKE])),
+        weather_condition = data[WEATHER][0][WEATHER_CONDITION],
+        weather_description = data[WEATHER][0][WEATHER_DESCRIPTION]
     )
 
     return weather_nowcast_data
@@ -126,11 +150,11 @@ def fetch_and_parse_weather_forecast(cords):
     if data == NO_WEATHER_ERROR_MSG:
         return data
 
-    place_name = data['city']['name']
+    place_name = data[CITY][CITY_NAME]
     current_time = datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
 
     print(f"Wetter um {current_time} in {place_name}: {data}")
-    return response.json
+    return data
 
 def get_weather_forecast_for_api():
     city_cords = get_cords_from_ip_location()
@@ -141,13 +165,13 @@ def get_weather_forecast_for_api():
 
     forecast = WeatherForecast(forecast=[])
 
-    for weather_data in data['list']:
+    for weather_data in data[FORECAST_LIST]:
         weather_nowcast_data = WeatherNowcast(
-            time=convert_timestamp_to_iso(weather_data['dt']),
-            temperature=round_half_up(convert_kelvin_to_celsius(weather_data['main']['temp'])),
-            feels_like=round_half_up(convert_kelvin_to_celsius(weather_data['main']['feels_like'])),
-            weather_condition=weather_data['weather'][0]['main'],
-            weather_description=weather_data['weather'][0]['description']
+            time=convert_timestamp_to_iso(weather_data[DATE_TIME]),
+            temperature=round_half_up(convert_kelvin_to_celsius(weather_data[WEATHER_CONDITION][TEMPERATURE])),
+            feels_like=round_half_up(convert_kelvin_to_celsius(weather_data[WEATHER_CONDITION][TEMPERATURE_FEELS_LIKE])),
+            weather_condition=weather_data[WEATHER][0][WEATHER_CONDITION],
+            weather_description=weather_data[WEATHER][0][WEATHER_DESCRIPTION]
         )
 
         forecast.forecast.append(weather_nowcast_data)
@@ -170,7 +194,7 @@ def get_sunrise_time():
         return data
 
     weather_nowcast_data = Sunrise(
-        time = convert_timestamp_to_iso(data['sys']['sunrise'])
+        time = convert_timestamp_to_iso(data[WEATHER_TIME][SUNRISE])
     )
 
     return weather_nowcast_data
@@ -182,7 +206,7 @@ def get_sunset_time():
         return data
 
     weather_nowcast_data = Sunset(
-        time = convert_timestamp_to_iso(data['sys']['sunset'])
+        time = convert_timestamp_to_iso(data[WEATHER_TIME][SUNSET])
     )
 
     return weather_nowcast_data
@@ -199,12 +223,14 @@ def convert_timestamp_to_iso(timestamp):
     return datetime.fromtimestamp(timestamp).isoformat()
 
 def deg_to_compass(deg):
-    directions = ['Norden', 'Nord-Nord-Ost', 'Nord-Ost', 'Ost-Nord-Ost', 
-                  'Osten', 'Ost-Süd-Ost', 'Süd-Ost', 'Süd-Süd-Ost', 
-                  'Süden', 'Süd-Süd-West', 'Süd-West', 'West-Süd-West', 
-                  'Westen', 'West-Nord-West', 'Nord-West', 'Nord-Nord-West']
     index = round(deg / 22.5) % 16
-    return directions[index]
+    return WIND_DIRECTIONS[index]
 
 def round_half_up(n):
     return math.floor(n * 10 + 0.5) / 10
+
+def test_weather_forecast():
+    print(get_weather_forecast_for_api())
+    print(get_current_weather_for_api())
+    print(get_sunrise_time())
+    print(get_sunset_time())
