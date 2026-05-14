@@ -4,7 +4,21 @@ from schemas.tagesschau_schema import NewsHeadline, DetailedNews
 
 BASE_URL = "https://www.tagesschau.de/api2u"
 NO_TAGESSCHAU_ERROR_MSG = "Fehler beim Abrufen der aktuellen Tagesschau Daten"
+NO_DETAILED_NEWS_MSG = "Keine Infos zur Schlagzeile gefunden"
 BANNED_NEWS_TAGS = ["Wetter"]
+
+# Constants for json fetching
+
+TAGS = "tags"
+TAG = "tag"
+EXTERNAL_ID = "externalId"
+DATE = "date"
+TITLE = "title"
+NEWS = "news"
+CONTENT = "content"
+VALUE = "value"
+TYPE = "type"
+TEXT = "text"
 
 def fetch_homepage_from_tagesschau():
     response = requests.get(f"{BASE_URL}/homepage")
@@ -27,61 +41,63 @@ def fetch_news_from_tagesschau():
 
 # TODO: SEARCH
 
-def get_tagesschau_homepage():
-    news_data = fetch_homepage_from_tagesschau()
-    headlines_short = []
+def extract_news_headlines_from_json(news):
+    news_headlines = []
 
-    for headline in news_data['news']:
-        if any(tag['tag'] in BANNED_NEWS_TAGS for tag in headline['tags']):
+    for headline in news:
+        if any(tag[TAG] in BANNED_NEWS_TAGS for tag in headline[TAGS]):
             continue
 
         current_headline = NewsHeadline(
-            id=headline['externalId'],
-            time=headline['date'],
-            headline=headline['title'],
+            id=headline[EXTERNAL_ID],
+            time=headline[DATE],
+            headline=headline[TITLE],
         )
 
-        headlines_short.append(current_headline)
+        news_headlines.append(current_headline)
 
-    print(headlines_short)
-    return headlines_short
+    return news_headlines
+
+def get_headlines(get_homepage=True):
+    news_data = {}
+
+    if get_homepage:
+        news_data = fetch_homepage_from_tagesschau()
+    else:
+        news_data = fetch_news_from_tagesschau()
+
+    headlines = extract_news_headlines_from_json(news_data[NEWS])
+    print(headlines)
+    return headlines
+
+def get_tagesschau_homepage():
+    headlines = get_headlines(True)
+    return headlines
+
+def get_news():
+    headlines = get_headlines(False)
+    return headlines
 
 def get_full_news_from_headline_id(id):
-    print(id)
+    print(f"ID der angefragten Schlagzeile: {id}")
     news_data = fetch_homepage_from_tagesschau()
 
-    for headline in news_data['news']:
-        if (headline['externalId'] == id):
+    for headline in news_data[NEWS]:
+        if (headline[EXTERNAL_ID] == id):
             content = ""
 
-            for line in headline['content']:
-                if (line['type'] == "text"):
-                    content += line['value']
+            for line in headline[CONTENT]:
+                if (line[TYPE] == TEXT):
+                    content += line[VALUE]
 
             current_headline = DetailedNews(
-                id = headline['externalId'],
-                time = headline['date'],
-                headline = headline['title'],
+                id = headline[EXTERNAL_ID],
+                time = headline[DATE],
+                headline = headline[TITLE],
                 content = content
             )
             
             print(current_headline)
             return current_headline
 
-    return "Keine Infos zur Schlagzeile gefunden"
-
-def get_news():
-    news_data = fetch_news_from_tagesschau()
-    headlines_short = []
-
-    for headline in news_data['news']:
-        current_headline = NewsHeadline(
-            id = headline['externalId'],
-            time = headline['date'],
-            headline = headline['title'],
-        )
-
-        headlines_short.append(current_headline)
-
-    print(headlines_short)
-    return headlines_short
+    return NO_DETAILED_NEWS_MSG
