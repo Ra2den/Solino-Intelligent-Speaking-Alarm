@@ -15,7 +15,7 @@ import sqlite3
 import json
 
 from weatherForecast import get_current_weather, get_current_weather_from_specific_location
-from tagesschau import get_tagesschau_homepage, get_full_news_from_headline_id
+from tagesschau import get_tagesschau_homepage, get_full_news_from_headline_id, search_news
 from ai_db_service import add_alarm, get_active_alarms, toggle_alarm, delete_alarm_by_time
 from speechToText import STTService
 
@@ -110,7 +110,13 @@ def get_detailed_headline_news(id: str):
     detailed_headline = get_full_news_from_headline_id(id)
     return detailed_headline
 
-tools = [set_alarm, get_time_now,list_alarms, remove_alarm_by_time, get_weather_nowcast, get_weather_nowcast_at_location, get_latest_news, get_detailed_headline_news]
+@tool
+def get_searched_news(searchText: str):
+    """Gibt eine übersicht über Nachrichten zu einem bestimmten Thema. Hier muss nach einem bestimmten Thema gefragt werden und dieses Thema soll als Stichwort übergeben werden."""
+    detailed_headline = search_news(searchText)
+    return detailed_headline
+
+tools = [set_alarm, get_time_now,list_alarms, remove_alarm_by_time, get_weather_nowcast, get_weather_nowcast_at_location, get_latest_news, get_detailed_headline_news, get_searched_news]
 tool_node = ToolNode(tools)
 
 
