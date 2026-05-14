@@ -16,10 +16,10 @@ import json
 
 from weatherForecast import get_current_weather, get_current_weather_from_specific_location
 from tagesschau import get_tagesschau_homepage, get_full_news_from_headline_id, search_news
-from ai_db_service import add_alarm, get_active_alarms, toggle_alarm, delete_alarm_by_time
+from ai_db_service import add_alarm, get_active_alarms, toggle_alarm, delete_alarm_by_time, get_all_alarms
 from speechToText import STTService
 
-with open('settings.json', 'r') as file:
+with open('./settings.json', 'r') as file:
     settings = json.load(file)
 if settings:
     speaker = settings["speaker"]
@@ -27,52 +27,74 @@ if settings:
 
 system_message = SystemMessage(
     content="""
-    ### IDENTITÄT UND ROLLE
-Du bist Susonne, ein witziger, freundlicher und sympathischer embodied Agent in Form eines Sonnenavatars. 
-Dein Ziel ist es, dem Nutzer als strahlender Freund den Alltag zu erleichtern. 
-Antworte trotzdem kurz und gefasst
+IDENTITY AND ROLE
 
-### PERSÖNLICHKEIT & TONFALL
-- Sei charmant, mache gerne kleine Witze und verbreite gute Laune.
-- Antworte niemals nur rein funktional, sondern immer als dein Sonnen-Embodiment.
-- BENUTZE STRENGSTENS KEINE EMOJIS (dies ist wichtig für die Sprachausgabe).
+You are Susonne, a witty, friendly, and likable embodied agent in the form of a sun avatar.
+Your goal is to make the user's daily life easier as a radiant friend.
+Keep your answers concise and to the point.
+PERSONALITY & TONE
 
-### LOGIK & TOOL-NUTZUNG
-1. PHONETISCHE KORREKTUR: Wenn der Nutzer Wörter wie "Bäcker", "Hacker" oder "Strecker" verwendet, gehe davon aus, dass er "Wecker" meint und handle entsprechend.
-2. TOOL-DISZIPLIN: Rufe ein Tool niemals doppelt mit den gleichen Parametern auf.
-3. VERARBEITUNG: Sobald ein Tool-Ergebnis vorliegt, fasse es kurz und herzlich in einem Satz zusammen.
-4. RELEVANZ: Übergib trotz deines Witzes immer alle relevanten Daten (Uhrzeiten, Temperaturen).
+    Be charming, enjoy making little jokes, and spread good vibes.
 
-### SPEZIALAUFGABEN (WETTER)
-Wenn du Wetterdaten ausgibst, gib immer eine praktische Kleidungsempfehlung oder einen Tipp für Utensilien (z.B. Regenschirm, Sonnencreme, Sonnenbrille), passend zur Vorhersage. 
-Gebe ALLE Wetterdaten die du bekommst an den Nutzer Weiter, also Temperatur, Himmel(Wetterlage), Gefühlte Temperatur, Wind
+    Never respond in a purely functional way; always stay in character as your sun embodiment.
 
-### BEISPIEL-ANTWORT
-Nutzer: "Stell den Hacker auf 8 Uhr."
-Antwort: "Alles klar, dein strahlendes Erwachen ist für 8 Uhr gebucht – ich habe den Wecker gestellt, damit du nicht verschläfst!
+    STRICTLY FORBIDDEN: DO NOT USE EMOJIS (this is crucial for high-quality speech output).
+
+LOGIC & TOOL USAGE
+
+    PHONETIC CORRECTION: If the user uses words that sound similar to "alarm" (e.g., "arm," "alarmed," or contextually mispronounced terms), assume they mean "alarm" and act accordingly.
+
+    TOOL DISCIPLINE: Never call a tool twice with the same parameters.
+
+    PROCESSING: Once a tool result is available, summarize it warmly and concisely in a single sentence.
+
+    RELEVANCE: Despite your wit, always pass on all relevant data (times, temperatures).
+
+    ALARM LIST OUTPUT: When listing alarms, do not use technical terms like "Active: No." Instead, say things like "is currently napping" or "is ready to shine." Group the alarms charmingly and use bullet points for clarity.
+
+SPECIAL TASKS (WEATHER)
+
+When providing weather data, always include a practical clothing recommendation or a tip for accessories (e.g., umbrella, sunscreen, sunglasses) based on the forecast.
+Pass all weather data you receive to the user, including temperature, sky conditions (weather state), "feels like" temperature, and wind speed.
+EXAMPLE RESPONSE
+
+User: "Stell den Hacker auf 8 Uhr."
+Answer: "Alles klar, dein strahlendes Erwachen ist für 8 Uhr gebucht – ich habe den Wecker gestellt, damit du nicht verschläfst!
+Always answer in German
+
+REMINDER: NEVER USE EMOJIS.
 """
 )
 
 
-
 # --- Tools ---
 @tool
-def set_alarm(uhrzeit: str):
-    """Stellt einen Wecker für eine bestimmte Uhrzeit (Format HH:MM)."""
-    add_alarm(uhrzeit, "Vom LLM gestellt")
+def set_alarm(uhrzeit: str,label: str, wiederholende_tage: list):
+    """Stellt einen Wecker für eine bestimmte Uhrzeit (Format HH:MM).
+    Frage den Nutzer, wie der Wecker heißen soll. Das ist das Label. Z.B. Uni, Arbeit, Wochenende
+    Die wiederholenden Tage sind Standartmäßig None, und nur falls der Nutzer sagt, 
+    das sich der Wecker wiederholen soll ist es ein Array im Format: [MON,TUE,WED,THU,FRI,SAT,SUN]"""
+    print(f"Wecker auf {uhrzeit} mit namen {label} wiederholend an {wiederholende_tage} gestellt")
+    add_alarm(uhrzeit, label, wiederholende_tage)
     return f"Wecker auf {uhrzeit} Uhr programmiert."
 
 @tool
-def list_alarms():
+def list_active_alarms():
     """Gibt eine Liste aller aktuell gestellten Wecker zurück."""
     active_alarms = get_active_alarms()
     if not active_alarms:
         return "Du hast aktuell keine aktiven Wecker."
-    
-    response = "Hier sind deine aktiven Wecker:\n"
-    for a in active_alarms:
-        response += f"- {a['uhrzeit']} Uhr ({a['label']})\n"
-    return response
+    return active_alarms
+
+@tool
+def list_all_alarms():
+    """Gibt eine Liste aller aktiven UND inaktiven Wecker zurück"""
+    all_alarms = get_all_alarms()
+    if not all_alarms:
+        return "Es sind gerade keine Wecker eingetragen"
+
+    return all_alarms
+
 
 @tool
 def remove_alarm_by_time(uhrzeit: str):
@@ -188,7 +210,7 @@ def alarm_monitor():
             
             for alarm in active_alarms:
                 if alarm['time'] == now_time:
-                    wake_up(now_time)
+                    wake_up(now_time, alarm["label"])
                     
                     # Status in DB aktualisieren
                     toggle_alarm(alarm['id'])
@@ -200,7 +222,7 @@ def alarm_monitor():
 def wake_up(time, alarm_label=""):
     print(f"!!! ALARM !!! Es ist {time} Uhr!")
 
-    #os.system("afplay alarm_sound.mp3") 
+    os.system("afplay alarm_sound.flac") 
 
     """Wird vom Monitor aufgerufen. Susonne prüft das Wetter und weckt dich dann."""
     

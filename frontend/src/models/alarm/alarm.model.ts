@@ -14,6 +14,12 @@ export type Weekday = z.infer<typeof WeekdaySchema>;
 export const WeekdayArraySchema = z.array(WeekdaySchema).nullable();
 export type WeekdayArray = z.infer<typeof WeekdayArraySchema>;
 
+export const AlarmCreateSchema = z.object({
+  time: z.string(),
+  label: z.string(),
+  recurring_days: z.array(WeekdaySchema).nullable(),
+});
+
 export const AlarmSchema = z.object({
   id: z.number(),
   time: z.string(),
@@ -23,3 +29,4 @@ export const AlarmSchema = z.object({
 });
 
 export type Alarm = z.infer<typeof AlarmSchema>;
+export type AlarmCreate = z.infer<typeof AlarmCreateSchema>;

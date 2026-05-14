@@ -60,6 +60,8 @@ def get_city_from_ip():
         print(response['region'])
         return response
 
+# --- translate city and region into geo cords ---
+
 def get_cords_from_location(city, region):
     geolocator = Photon(user_agent="geoapiExercises")
     location = geolocator.geocode(f"{city}, {region}")
@@ -83,12 +85,13 @@ def fetch_weather_nowcast(cords):
     if response.status_code == 200:
         return response.json()
     else:
-        return NO_WEATHER_ERROR_MSG
+        print(NO_WEATHER_ERROR_MSG)
+        return None
 
 def fetch_and_parse_weather_nowcast(cords):
     data = fetch_weather_nowcast(cords)
-    if data == NO_WEATHER_ERROR_MSG:
-        return data
+    if data is None:
+        return None
 
     curr_temp = convert_kelvin_to_celsius(data[WEATHER_CONDITION][TEMPERATURE])
     fells_like = convert_kelvin_to_celsius(data[WEATHER_CONDITION][TEMPERATURE_FEELS_LIKE])
@@ -103,7 +106,7 @@ def fetch_and_parse_weather_nowcast(cords):
         f"Das Wetter in {data[CITY_NAME]} ist aktuell bei {round_half_up(curr_temp)} °C "
         f"Bei gefühlten {round_half_up(fells_like)} °C. "
         f"Bei hauptsächlich {weather_cond_main} und {weather_cond_description} Wetter. "
-        f"Mit Windgeschwindigkeiten von {wind_speed} km/h, aus {wind_direction} kommend."
+        f"Mit Windgeschwindigkeiten von {round_half_up(wind_speed)} km/h, aus {wind_direction} kommend."
     )
 
     print(weather_nowcaset_string)
@@ -112,8 +115,8 @@ def fetch_and_parse_weather_nowcast(cords):
 def get_current_weather_for_api():
     city_cords = get_cords_from_ip_location()
     data = fetch_weather_nowcast(city_cords)
-    if data == NO_WEATHER_ERROR_MSG:
-        return data
+    if data is None:
+        return None
 
     weather_nowcast_data = WeatherNowcast(
         time = convert_timestamp_to_iso(data[DATE_TIME]),
@@ -143,12 +146,13 @@ def fetch_weather_forecast(cords):
     if response.status_code == 200:
         return response.json()
     else:
-        return NO_WEATHER_ERROR_MSG
+        print(NO_WEATHER_ERROR_MSG)
+        return None
 
 def fetch_and_parse_weather_forecast(cords):
     data = fetch_weather_forecast(cords)
-    if data == NO_WEATHER_ERROR_MSG:
-        return data
+    if data is None:
+        return None
 
     place_name = data[CITY][CITY_NAME]
     current_time = datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
@@ -159,9 +163,8 @@ def fetch_and_parse_weather_forecast(cords):
 def get_weather_forecast_for_api():
     city_cords = get_cords_from_ip_location()
     data = fetch_weather_forecast(city_cords)
-
-    if data == NO_WEATHER_ERROR_MSG:
-        return data
+    if data is None:    
+        return None
 
     forecast = WeatherForecast(forecast=[])
 
@@ -187,11 +190,12 @@ def get_weather_forecast_from_specific_location(location_name, location_region):
     return fetch_and_parse_weather_forecast(city_cords)
 
 # --- get times for sunrise and sunset ---
+
 def get_sunrise_time():
     city_cords = get_cords_from_ip_location()
     data = fetch_weather_nowcast(city_cords)
-    if data == NO_WEATHER_ERROR_MSG:
-        return data
+    if data is None:
+        return None
 
     weather_nowcast_data = Sunrise(
         time = convert_timestamp_to_iso(data[WEATHER_TIME][SUNRISE])
@@ -202,8 +206,8 @@ def get_sunrise_time():
 def get_sunset_time():
     city_cords = get_cords_from_ip_location()
     data = fetch_weather_nowcast(city_cords)
-    if data == NO_WEATHER_ERROR_MSG:
-        return data
+    if data is None:
+        return None
 
     weather_nowcast_data = Sunset(
         time = convert_timestamp_to_iso(data[WEATHER_TIME][SUNSET])
