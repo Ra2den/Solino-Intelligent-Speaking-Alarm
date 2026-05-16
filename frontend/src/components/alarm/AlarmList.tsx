@@ -49,7 +49,7 @@ export function AlarmList({ onBack }: AlarmListProps) {
     const [alarms] = useState<Alarm[]>(demoAlarms);
 
     return (
-        <div className="w-full h-full flex flex-col p-12">
+        <div className="w-1/2 h-screen flex flex-col p-12">
             {/* Header */}
             <div className="flex items-center justify-between mb-8">
                 <h1 className="text-white text-[40px] font-medium">Deine Wecker</h1>
@@ -68,7 +68,7 @@ export function AlarmList({ onBack }: AlarmListProps) {
             </div>
 
             {/* Scrollbare Liste */}
-            <div className="flex-1 overflow-y-auto flex flex-col gap-6 pr-4">
+            <div className="flex-1 overflow-y-auto flex flex-col gap-6 pr-4 custom-scrollbar">
                 {alarms.map((alarm) => (
                     <AlarmCard key={alarm.id} alarm={alarm} isWidget={false} />
                 ))}
