@@ -6,8 +6,9 @@ import recurringAlarmIcon from "/src/assets/alarm/icon-alarm.svg";
 type AlarmCardProps = {
   alarm?: Alarm;
   isWidget?: boolean;
+  onToggle?: () => void;
 };
-export function AlarmCard({ alarm, isWidget }: AlarmCardProps) {
+export function AlarmCard({ alarm, isWidget, onToggle }: AlarmCardProps) {
   const isRecurring = alarm?.recurring_days !== null;
   return (
     <div
@@ -42,7 +43,7 @@ export function AlarmCard({ alarm, isWidget }: AlarmCardProps) {
 
               {!isWidget && (
                 <button
-                  onClick={() => toggleAlarm}
+                  onClick={onToggle}
                   className="relative w-20 h-11 rounded-full bg-white transition-all duration-300"
                   aria-label={
                     alarm?.active ? "Wecker deaktivieren" : "Wecker aktivieren"
@@ -68,6 +69,4 @@ export function AlarmCard({ alarm, isWidget }: AlarmCardProps) {
       </div>
     </div>
   );
-
-  function toggleAlarm() {}
 }
