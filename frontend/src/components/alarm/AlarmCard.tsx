@@ -12,13 +12,16 @@ export function AlarmCard({ alarm, isWidget, onToggle }: AlarmCardProps) {
   const isRecurring = alarm?.recurring_days !== null;
   return (
     <div
-      className={`w-full h-full relative rounded-[50px] bg-black mix-blend-soft-light transition-opacity duration-300 ${
-        !alarm?.active ? "opacity-40" : ""
-      }`}
+      className={`w-full h-full relative rounded-[50px] bg-black mix-blend-soft-light transition-opacity duration-300 ${!alarm?.active ? "opacity-50" : ""
+        }`}
     >
       <div className="flex flex-col justify-center w-full h-full pt-6.25 pb-6.25 ps-12.5 pe-12.5 rounded-[50px]">
         {isWidget && alarm == null && (
-          <div className="text-white">Kein Wecker gestellt</div>
+          <div className="flex items-center justify-center w-full h-full">
+            <p className="text-white text-[36px] font-medium">
+              Kein Wecker gestellt
+            </p>
+          </div>
         )}
         {alarm != null && (
           <>
@@ -50,9 +53,8 @@ export function AlarmCard({ alarm, isWidget, onToggle }: AlarmCardProps) {
                   }
                 >
                   <span
-                    className={`absolute top-1/2 -translate-y-1/2 left-1.5 w-8.5 h-8.5 rounded-full bg-black transition-transform duration-300 ${
-                      alarm?.active ? "translate-x-8" : "translate-x-0"
-                    }`}
+                    className={`absolute top-1/2 -translate-y-1/2 left-1.5 w-8.5 h-8.5 rounded-full bg-black transition-transform duration-300 ${alarm?.active ? "translate-x-8" : "translate-x-0"
+                      }`}
                   />
                 </button>
               )}

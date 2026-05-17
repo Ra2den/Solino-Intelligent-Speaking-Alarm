@@ -20,9 +20,11 @@ export function HomeScreen() {
       ) : (
         <div className="w-full h-full overflow-hidden grid grid-cols-5 p-12 gap-6">
           {/* Widgets */}
-          <div className="col-span-2 min-h-0 grid grid-row-subgrid">
+          <div className="col-span-2 min-h-0 grid grid-rows-8 h-full">
             {isListView ? (
-              <AlarmList onBack={() => setIsListView(false)} />
+              <div className="row-span-8">
+                <AlarmList onBack={() => setIsListView(false)} />
+              </div>
             ) : (
               <Widgets />
             )}
@@ -43,7 +45,7 @@ export function HomeScreen() {
         <div className="row-span-3">
           <TimeWidget locale="de-DE" />
         </div>
-        <div className="row-span-2 flex items-center justify-between">
+        <div className="row-span-2 flex items-center justify-evenly">
           {/* Buttons */}
           <Button
             onClick={() => setIsListView(true)}
