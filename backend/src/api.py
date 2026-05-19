@@ -8,15 +8,18 @@ import db.alarms_db as alarms_db
 from schemas.alarm_schema import Alarm, AlarmCreate
 from schemas.weather_schema import WeatherNowcast, WeatherForecast, Sunrise, Sunset
 import weatherForecast
+import db.alarm_sessions_db as alarm_sessions_db
+from schemas.alarm_session_schema import AlarmSession, AlarmSessionStatus
+import alarm_service
 
 logger = logging.getLogger(__name__)
 
 
 def _run_alarm_monitor():
     try:
-        from ai import alarm_monitor
+        from alarm_service import monitor_alarms
+        monitor_alarms()
 
-        alarm_monitor()
     except Exception:
         logger.exception("Alarm monitor thread stopped unexpectedly")
 
@@ -128,3 +131,15 @@ def get_sunset_time():
         raise HTTPException(status_code=502, detail="Weather service error")
 
     return result
+
+@app.get("/alarm-session/current", response_model=Optional[AlarmSession])
+def get_current_alarm_session():
+    return alarm_sessions_db.get_active_alarm_session()
+
+@app.post("/alarm-session/{session_id}/stop", response_model=Optional[AlarmSession])
+def stop_current_alarm_session(session_id: int):
+    return alarm_service.stop_ringing_session(session_id, status=AlarmSessionStatus.DISMISSED)
+
+@app.post("/alarm-session/{session_id}/snooze", response_model=Optional[AlarmSession])
+def snooze_current_alarm_session(session_id: int):
+    return alarm_service.stop_ringing_session(session_id, status=AlarmSessionStatus.SNOOZED)

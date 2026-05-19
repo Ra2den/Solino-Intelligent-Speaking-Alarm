@@ -8,10 +8,24 @@ import alarmListIcon from "/src/assets/alarm/icon-alarmListBtn.svg";
 import alarmAddIcon from "/src/assets/alarm/icon-alarmAddBtn.svg";
 import settingsIcon from "/src/assets/alarm/icon-settingsBtn.svg";
 import { AlarmList } from "./alarm/AlarmList";
+import { useAlarmSession } from "../contexts/alarm-session.context";
+import { AlarmRingingScreen } from "./AlarmRingingScreen";
 
 export function HomeScreen() {
   const [isCreate, setIsCreate] = useState(false);
   const [isListView, setIsListView] = useState(false);
+  const { isRinging, currentAlarmSession, stopAlarm, snoozeAlarm } =
+    useAlarmSession();
+
+  if (isRinging && currentAlarmSession) {
+    return (
+      <AlarmRingingScreen
+        session={currentAlarmSession}
+        onStop={stopAlarm}
+        onSnooze={() => snoozeAlarm()}
+      />
+    );
+  }
 
   return (
     <>

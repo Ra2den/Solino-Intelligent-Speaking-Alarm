@@ -24,10 +24,7 @@ if settings:
     speaker = settings["speaker"]
 
 BASE_DIR = Path(__file__).resolve().parent
-BACKEND_DIR = BASE_DIR.parent
 RESPONSE_WAV_PATH = BASE_DIR / "response.wav"
-ALARM_SOUND_PATH = BACKEND_DIR / "alarm_sound.flac"
-ALARM_SOUND_FALLBACK_PATH = BACKEND_DIR / "alarm_sound.mp3"
 
 
 system_message = SystemMessage(
@@ -233,38 +230,9 @@ def _play_audio_file(audio_path):
             f"Player: {player}. Fehler: {error_output or 'Unbekannter Fehler'}"
         )
 
-
-def _play_alarm_sound():
-    candidate_paths = [ALARM_SOUND_PATH, ALARM_SOUND_FALLBACK_PATH]
-    errors = []
-
-    for candidate_path in candidate_paths:
-        if not candidate_path.exists():
-            errors.append(f"Datei nicht gefunden: {candidate_path}")
-            continue
-
-        try:
-            _play_audio_file(candidate_path)
-            print(f"Alarm-Sound abgespielt: {candidate_path.name}")
-            return
-        except Exception as exc:
-            errors.append(str(exc))
-
-    print("Alarm-Sound konnte nicht abgespielt werden.")
-    for error in errors:
-        print(f"- {error}")
-
-def alarm_monitor():
-    alarm_service.monitor_alarms(on_alarm_triggered=_handle_triggered_alarm)
-
-
-def _handle_triggered_alarm(alarm):
-    wake_up(alarm["time"], alarm["label"])
-
 def wake_up(time, alarm_label=""):
+    # TODO start when alarm is dismissed
     print(f"!!! ALARM !!! Es ist {time} Uhr!")
-
-    _play_alarm_sound()
 
     """Wird vom Monitor aufgerufen. Susonne prüft das Wetter und weckt dich dann."""
     
