@@ -5,7 +5,8 @@ from datetime import datetime, timezone
 import os
 from dotenv import load_dotenv
 from geopy.geocoders import Photon
-from schemas.weather_schema import WeatherNowcast, WeatherForecast, Sunrise, Sunset
+
+from domain.weather.schemas import WeatherForecast, WeatherNowcast, Sunrise, Sunset
 load_dotenv()
 
 API_KEY = os.getenv("API_KEY")

@@ -1,6 +1,6 @@
-from db.alarm_sessions_db import create_alarm_sessions_table
-from db.alarms_db import create_alarms_table
-from db.db import db
+from .alarm_sessions_repo import create_alarm_sessions_table
+from .alarms_repo import create_alarms_table
+from .db import db
 
 
 def init_db():

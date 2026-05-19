@@ -6,9 +6,10 @@ import time
 from pathlib import Path
 
 
-BACKEND_DIR = Path(__file__).resolve().parent
-ALARM_SOUND_PATH = BACKEND_DIR / "alarm_sound.flac"
-ALARM_SOUND_FALLBACK_PATH = BACKEND_DIR / "alarm_sound.mp3"
+BACKEND_ROOT = Path(__file__).resolve().parents[3]
+SOUNDS_DIR = BACKEND_ROOT / "assets" / "sounds"
+ALARM_SOUND_PATH = SOUNDS_DIR / "alarm_sound.flac"
+ALARM_SOUND_FALLBACK_PATH = SOUNDS_DIR / "alarm_sound.mp3"
 
 
 def _find_audio_file() -> Path:

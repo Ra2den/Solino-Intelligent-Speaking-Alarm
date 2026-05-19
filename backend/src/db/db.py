@@ -3,11 +3,14 @@ from contextlib import contextmanager
 from pathlib import Path
 
 
-DB_PATH = Path(__file__).resolve().with_name("alarms.db")
+BACKEND_ROOT = Path(__file__).resolve().parents[2]
+DB_PATH = BACKEND_ROOT / "data" / "alarms.db"
 
 
 class Database:
     def __init__(self, db_path=DB_PATH):
+        db_path = Path(db_path)
+        db_path.parent.mkdir(parents=True, exist_ok=True)
         self.db_path = str(db_path)
 
     @contextmanager

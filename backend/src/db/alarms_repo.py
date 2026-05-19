@@ -1,7 +1,7 @@
 import json
 
-from db.db import db
-from db_helper import parse_weekdays
+from .db import db
+from helper.db_helper import parse_weekdays
 
 
 def create_alarms_table():

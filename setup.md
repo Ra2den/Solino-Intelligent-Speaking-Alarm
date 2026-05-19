@@ -1,85 +1,113 @@
-# 🚀 Setup-Anleitung
-## 🔧 Einmaliges Setup
-### 1. Miniconda installieren
+# Setup Guide
+
+## One-Time Setup
+
+### 1. Install Miniconda
+
+Download and install Miniconda:
+
 https://www.anaconda.com/download/success
-### 2. Conda Environment erstellen
+
+### 2. Create the Conda environment
+
 ```bash
-conda create --name solino2 python=3.11
-conda activate solino2
+conda create --name solino python=3.11
+conda activate solino
 cd backend
 pip install -r requirements.txt
-pip install pyaudio
 ```
----
 
-### 3. Environment-Variablen konfigurieren
+Note:
+- `PyAudio` is already included in `backend/requirements.txt`.
+- If `PyAudio` fails to build on your machine, install the required system audio libraries first and then rerun `pip install -r requirements.txt`.
 
-Erstelle im Projektverzeichnis eine .env Datei:
+### 3. Configure environment variables
 
+Create the file `backend/.env`:
+
+```env
 API_KEY=your_openweathermap_api_key_here
+```
 
----
+### 4. Install Ollama
 
-### 4. Ollama installieren
-
-Installiere Ollama gemäß der offiziellen Anleitung für dein Betriebssystem.
+Install Ollama for your operating system:
 
 https://ollama.com/
 
----
+### 5. Download the Piper voice models
 
-### 5. Piper Voice Modelle herunterladen
+```bash
+mkdir -p backend/assets/models
+cd backend/assets/models
 
-```
-mkdir -p backend/models
-cd backend/models
 # Thorsten (high quality)
 curl -L "https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/de/de_DE/thorsten/high/de_DE-thorsten-high.onnx?download=true" -o de_DE-thorsten-high.onnx
 curl -L "https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/de/de_DE/thorsten/high/de_DE-thorsten-high.onnx.json?download=true" -o de_DE-thorsten-high.onnx.json
+
 # Kerstin (low quality)
 curl -L "https://huggingface.co/rhasspy/piper-voices/resolve/main/de/de_DE/kerstin/low/de_DE-kerstin-low.onnx?download=true" -o de_DE-kerstin-low.onnx
 curl -L "https://huggingface.co/rhasspy/piper-voices/resolve/main/de/de_DE/kerstin/low/de_DE-kerstin-low.onnx.json?download=true" -o de_DE-kerstin-low.onnx.json
 ```
----
 
-## ▶️ Anwendung starten
+## Start the Project
 
-Für den Betrieb werden mehrere Terminal-Tabs benötigt:
+The project has two different backend entrypoints:
 
----
+- `backend/src/api/main.py`: FastAPI server for the frontend
+- `backend/src/main.py`: optional voice CLI for talking to the assistant directly
 
-### 1. Frontend starten
-```
+For normal frontend development, the FastAPI server is the important one.
+
+### 1. Start the frontend
+
+```bash
 cd frontend
+npm install
 npm run dev
 ```
----
 
-### 2. Backend (KI / DB) starten
-```
+### 2. Start the FastAPI server
+
+Run this from `backend/src` because the backend imports are rooted there.
+
+```bash
 cd backend/src
 conda activate solino
-python main.py
+fastapi dev api/main.py
 ```
----
 
-### 3. API starten (FastAPI)
-```
+### 3. Optional: start the CLI assistant
+
+This is only needed if you want to use the microphone/voice CLI directly.
+
+```bash
 cd backend/src
 conda activate solino
-fastapi dev api.py
+python assistant_cli.py
 ```
----
 
-### 4. LLM starten (mit Ollama)
+### 4. Start Ollama
+
+```bash
+ollama serve
 ```
+
+### 5. Start the local model in Ollama
+
+```bash
 ollama run gemma4
 ```
----
 
-💡 Hinweise
+### 6. Start Communication with Assistant
+Return to the Terminal Tab of Step 3 and press ENTER to speak with the assistant.
 
-* Stelle sicher, dass dein Conda-Environment aktiviert ist, bevor du Backend oder API startest.
-* Prüfe, ob alle Ports frei sind (Frontend, Backend, API).
-* Falls Audio-Probleme auftreten, überprüfe die Installation von pyaudio.
+## Notes
 
+- Activate the `solino` Conda environment before starting backend commands.
+- The FastAPI server and the CLI are separate processes.
+- The backend stores the SQLite database in `backend/data/alarms.db`.
+- Piper models are loaded from `backend/assets/models`.
+- Generated assistant audio is written to `backend/assets/audio`.
+- Alarm sounds are loaded from `backend/assets/sounds`.
+- On macOS audio playback uses `afplay`; on Linux use `aplay`.

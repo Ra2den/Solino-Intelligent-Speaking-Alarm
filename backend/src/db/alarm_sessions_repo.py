@@ -1,5 +1,5 @@
-from db.db import db
-from schemas.alarm_session_schema import AlarmSessionStatus
+from .db import db
+from domain.alarms.schemas import AlarmSessionStatus
 
 def create_alarm_sessions_table():
     db.execute(

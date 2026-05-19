@@ -1,14 +1,12 @@
 import logging
 import time
-from collections.abc import Callable
 from datetime import datetime, timedelta
 
-import db.alarms_db as alarms_db
-import db.alarm_sessions_db as alarm_sessions_db
-from db_helper import validate_weekdays
-from schemas.alarm_schema import Weekday
-from schemas.alarm_session_schema import AlarmSession, AlarmSessionStatus
-from alarm_player import alarm_player
+import db.alarm_sessions_repo as alarm_sessions_repo
+import db.alarms_repo as alarms_repo
+from domain.alarms.player import alarm_player
+from domain.alarms.schemas import AlarmSession, AlarmSessionStatus, Weekday
+from helper.db_helper import validate_weekdays
 
 logger = logging.getLogger(__name__)
 
@@ -27,35 +25,35 @@ def add_alarm(time_value, label, recurring_days):
     if not validate_weekdays(recurring_days):
         return None
 
-    return alarms_db.add_alarm(time_value, label, recurring_days)
+    return alarms_repo.add_alarm(time_value, label, recurring_days)
 
 def get_all_alarms():
     """Return all alarms, active and inactive."""
-    return alarms_db.get_all_alarms()
+    return alarms_repo.get_all_alarms()
 
 def get_active_alarms():
     """Return only alarms that are currently active."""
-    return alarms_db.get_active_alarms()
+    return alarms_repo.get_active_alarms()
 
 def get_alarm_by_time(time_value):
     """Return the alarm that matches the given HH:MM time."""
-    return alarms_db.get_alarm_by_time(time_value)
+    return alarms_repo.get_alarm_by_time(time_value)
 
 def toggle_alarm(alarm_id):
     """Flip an alarm between active and inactive."""
-    return alarms_db.toggle_alarm(alarm_id)
+    return alarms_repo.toggle_alarm(alarm_id)
 
 def set_alarm_active(alarm_id, active):
     """Explicitly set an alarm to active or inactive."""
-    return alarms_db.set_alarm_active(alarm_id, active)
+    return alarms_repo.set_alarm_active(alarm_id, active)
 
 def set_last_triggered_at(alarm_id, last_triggered_at):
     """Persist the last trigger timestamp for an alarm."""
-    return alarms_db.set_last_triggered_at(alarm_id, last_triggered_at)
+    return alarms_repo.set_last_triggered_at(alarm_id, last_triggered_at)
 
 def delete_alarm_by_time(time_value):
     """Delete an alarm by its HH:MM time value."""
-    return alarms_db.delete_alarm_by_time(time_value)
+    return alarms_repo.delete_alarm_by_time(time_value)
 
 # MONITORING LOGIC
 
@@ -107,7 +105,7 @@ def _mark_alarm_triggered(alarm, triggered_at_datetime):
 
 def _resume_snoozed_session_if_due(current_datetime):
     """Resume a snoozed session once its snooze window has elapsed."""
-    current_session = alarm_sessions_db.get_latest_snoozed_alarm_session()
+    current_session = alarm_sessions_repo.get_latest_snoozed_alarm_session()
     if not current_session:
         return False
 
@@ -121,7 +119,7 @@ def _resume_snoozed_session_if_due(current_datetime):
     if datetime.fromisoformat(snoozed_until) > current_datetime:
         return False
 
-    alarm_sessions_db.update_alarm_session(
+    alarm_sessions_repo.update_alarm_session(
         current_session["id"],
         status=AlarmSessionStatus.RINGING,
         ring_count=current_session["ring_count"] + 1,
@@ -160,14 +158,14 @@ def monitor_alarms(
         time.sleep(poll_interval)
 
 def start_ringing_sesssion(alarm):
-    existing_session = alarm_sessions_db.get_unresolved_alarm_session_by_alarm_id(alarm["id"])
+    existing_session = alarm_sessions_repo.get_unresolved_alarm_session_by_alarm_id(alarm["id"])
     if existing_session and existing_session.get("status") in (
         AlarmSessionStatus.RINGING,
         AlarmSessionStatus.SNOOZED,
     ):
         return
 
-    current_session: AlarmSession = alarm_sessions_db.create_alarm_session(
+    current_session: AlarmSession = alarm_sessions_repo.create_alarm_session(
         alarm_id=alarm["id"], 
         status=AlarmSessionStatus.RINGING, 
         started_at=datetime.now().isoformat(),
@@ -182,9 +180,9 @@ def stop_ringing_session(session_id: int, status=AlarmSessionStatus.DISMISSED):
             session_id,
             alarm_player.current_session_id(),
         )
-        return alarm_sessions_db.get_alarm_session_by_id(session_id)
+        return alarm_sessions_repo.get_alarm_session_by_id(session_id)
 
-    session = alarm_sessions_db.update_alarm_session(
+    session = alarm_sessions_repo.update_alarm_session(
         session_id,
         status=status,
         snoozed_until=(datetime.now() + timedelta(minutes=5)).isoformat() if status == AlarmSessionStatus.SNOOZED else None,
@@ -193,9 +191,9 @@ def stop_ringing_session(session_id: int, status=AlarmSessionStatus.DISMISSED):
     alarm_player.stop()
     
     if status == AlarmSessionStatus.DISMISSED and session:
-        alarm = alarms_db.get_alarm_by_id(session["alarm_id"])
+        alarm = alarms_repo.get_alarm_by_id(session["alarm_id"])
         if alarm:
-            from ai import wake_up
+            from domain.assistant.service import wake_up
 
             wake_up(alarm["time"], session.get("label") or alarm.get("label", ""))
         else:

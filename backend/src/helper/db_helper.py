@@ -1,6 +1,7 @@
 import json
 from typing import List, Optional
-from schemas.alarm_schema import Weekday
+
+from domain.alarms.schemas import Weekday
 
 def parse_weekdays(db_value: Optional[str]) -> Optional[List[Weekday]]:
     if db_value is None:

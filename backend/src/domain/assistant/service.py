@@ -14,17 +14,26 @@ import subprocess
 from pathlib import Path
 import shutil
 
-import alarm_service
-from weatherForecast import get_current_weather, get_current_weather_from_specific_location
-from speechToText import STTService
+import domain.alarms.service as alarm_service
+from domain.assistant.speech_to_text import STTService
+from domain.weather.service import (
+    get_current_weather,
+    get_current_weather_from_specific_location,
+)
 
-with open('./settings.json', 'r') as file:
+BACKEND_ROOT = Path(__file__).resolve().parents[3]
+ASSETS_DIR = BACKEND_ROOT / "assets"
+MODELS_DIR = ASSETS_DIR / "models"
+AUDIO_DIR = ASSETS_DIR / "audio"
+SETTINGS_PATH = BACKEND_ROOT / "settings.json"
+RESPONSE_WAV_PATH = AUDIO_DIR / "response.wav"
+
+AUDIO_DIR.mkdir(parents=True, exist_ok=True)
+
+with SETTINGS_PATH.open("r") as file:
     settings = json.load(file)
 if settings:
     speaker = settings["speaker"]
-
-BASE_DIR = Path(__file__).resolve().parent
-RESPONSE_WAV_PATH = BASE_DIR / "response.wav"
 
 
 system_message = SystemMessage(
@@ -193,9 +202,9 @@ def speak(text):
     #print(f"Generiere Audio für: {text}...")
     # 'aplay' ist der Standard-Player auf Linux, 'afplay' auf Mac
     if speaker == "male":
-        model_path = BASE_DIR / "models" / "de_DE-thorsten-high.onnx"
+        model_path = MODELS_DIR / "de_DE-thorsten-high.onnx"
     else:
-        model_path = BASE_DIR / "models" / "de_DE-kerstin-low.onnx"
+        model_path = MODELS_DIR / "de_DE-kerstin-low.onnx"
 
     subprocess.run(
         [
