@@ -240,7 +240,6 @@ def _play_audio_file(audio_path):
         )
 
 def wake_up(time, alarm_label=""):
-    # TODO start when alarm is dismissed
     print(f"!!! ALARM !!! Es ist {time} Uhr!")
 
     """Wird vom Monitor aufgerufen. Susonne prüft das Wetter und weckt dich dann."""

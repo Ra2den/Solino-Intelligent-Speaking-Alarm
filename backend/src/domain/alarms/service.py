@@ -6,7 +6,7 @@ import db.alarm_sessions_repo as alarm_sessions_repo
 import db.alarms_repo as alarms_repo
 from domain.alarms.player import alarm_player
 from domain.alarms.schemas import AlarmSession, AlarmSessionStatus, Weekday
-from helper.db_helper import validate_weekdays
+from domain.alarms.helper.alarm_helper import validate_weekdays
 
 logger = logging.getLogger(__name__)
 
@@ -39,6 +39,28 @@ def get_alarm_by_time(time_value):
     """Return the alarm that matches the given HH:MM time."""
     return alarms_repo.get_alarm_by_time(time_value)
 
+
+def get_alarm_by_id(alarm_id):
+    """Return an alarm by its numeric ID."""
+    return alarms_repo.get_alarm_by_id(alarm_id)
+
+
+def update_alarm(alarm_id, time=None, label=None, recurring_days=None, active=None):
+    """Update an alarm's properties."""
+    return alarms_repo.update_alarm(
+        alarm_id=alarm_id,
+        time=time,
+        label=label,
+        recurring_days=recurring_days,
+        active=active,
+    )
+
+
+def delete_alarm_by_id(alarm_id):
+    """Delete an alarm by its numeric ID."""
+    return alarms_repo.delete_alarm_by_id(alarm_id)
+
+
 def toggle_alarm(alarm_id):
     """Flip an alarm between active and inactive."""
     return alarms_repo.toggle_alarm(alarm_id)
@@ -54,6 +76,12 @@ def set_last_triggered_at(alarm_id, last_triggered_at):
 def delete_alarm_by_time(time_value):
     """Delete an alarm by its HH:MM time value."""
     return alarms_repo.delete_alarm_by_time(time_value)
+
+
+def get_current_alarm_session():
+    """Return the currently active alarm session, if any."""
+    return alarm_sessions_repo.get_active_alarm_session()
+
 
 # MONITORING LOGIC
 

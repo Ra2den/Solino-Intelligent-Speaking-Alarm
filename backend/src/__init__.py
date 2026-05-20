@@ -14,7 +14,7 @@ def _alias_subpackage(alias: str) -> None:
     sys.modules.setdefault(alias, module)
 
 
-for _subpackage in ("domain", "helper", "db", "api"):
+for _subpackage in ("domain", "db", "api"):
     _alias_subpackage(_subpackage)
 
 del _subpackage

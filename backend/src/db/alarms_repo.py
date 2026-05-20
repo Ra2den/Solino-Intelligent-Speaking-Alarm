@@ -1,7 +1,7 @@
 import json
 
-from .db import db
-from helper.db_helper import parse_weekdays
+from .connection import db
+from .mappers import serialize_alarm_row, serialize_alarm_rows
 
 
 def create_alarms_table():
@@ -29,22 +29,6 @@ def create_alarms_table():
         if "last_triggered_at" not in columns:
             conn.execute("ALTER TABLE alarms ADD COLUMN last_triggered_at TEXT")
 
-
-def _serialize_alarm_row(row):
-    if not row:
-        return None
-
-    alarm = dict(row)
-    if alarm.get("recurring_days"):
-        alarm["recurring_days"] = parse_weekdays(alarm["recurring_days"])
-
-    return alarm
-
-
-def _serialize_alarm_rows(rows):
-    return [_serialize_alarm_row(row) for row in rows]
-
-
 def add_alarm(time_value, label, recurring_days):
     recurring_days_json = json.dumps(recurring_days)
     alarm_id = db.execute(
@@ -55,21 +39,23 @@ def add_alarm(time_value, label, recurring_days):
 
 
 def get_all_alarms():
-    return _serialize_alarm_rows(db.fetch_all("SELECT * FROM alarms"))
+    return serialize_alarm_rows(db.fetch_all("SELECT * FROM alarms ORDER BY time"))
 
 
 def get_active_alarms():
-    return _serialize_alarm_rows(db.fetch_all("SELECT * FROM alarms WHERE active = 1"))
+    return serialize_alarm_rows(
+        db.fetch_all("SELECT * FROM alarms WHERE active = 1 ORDER BY time")
+    )
 
 
 def get_alarm_by_time(time_value):
-    return _serialize_alarm_row(
+    return serialize_alarm_row(
         db.fetch_one("SELECT * FROM alarms WHERE time = ?", (time_value,))
     )
 
 
 def get_alarm_by_id(alarm_id):
-    return _serialize_alarm_row(
+    return serialize_alarm_row(
         db.fetch_one("SELECT * FROM alarms WHERE id = ?", (alarm_id,))
     )
 

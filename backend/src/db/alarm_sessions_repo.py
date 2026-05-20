@@ -1,4 +1,5 @@
-from .db import db
+from .connection import db
+from .mappers import serialize_alarm_session_row, serialize_alarm_session_rows
 from domain.alarms.schemas import AlarmSessionStatus
 
 def create_alarm_sessions_table():
@@ -16,16 +17,15 @@ def create_alarm_sessions_table():
         )
         """
     )
-
 def create_alarm_session(
     alarm_id: int,
     status: AlarmSessionStatus,
-    started_at,
-    snoozed_until=None,
-    label=None,
-    ring_count=0,
+    started_at: str,
+    snoozed_until: str=None,
+    label: str=None,
+    ring_count: int=0,
 ):
-    session_id = db.execute(
+    session_id: int = db.execute(
         """
         INSERT INTO alarm_sessions (
             alarm_id, status, started_at, snoozed_until, label, ring_count
@@ -36,57 +36,71 @@ def create_alarm_session(
     return get_alarm_session_by_id(session_id)
 
 
-def get_alarm_session_by_id(session_id):
-    return db.fetch_one("SELECT * FROM alarm_sessions WHERE id = ?", (session_id,))
+def get_alarm_session_by_id(session_id: int):
+    return serialize_alarm_session_row(
+        db.fetch_one("SELECT * FROM alarm_sessions WHERE id = ?", (session_id,))
+    )
 
-def get_unresolved_alarm_session_by_alarm_id(alarm_id):
-    return db.fetch_one(
-        """
-        SELECT * FROM alarm_sessions
-        WHERE alarm_id = ? AND status IN (?, ?)
-        ORDER BY started_at DESC, id DESC
-        LIMIT 1
-        """,
-        (alarm_id, AlarmSessionStatus.RINGING, AlarmSessionStatus.SNOOZED),
+def get_unresolved_alarm_session_by_alarm_id(alarm_id: int):
+    return serialize_alarm_session_row(
+        db.fetch_one(
+            """
+            SELECT * FROM alarm_sessions
+            WHERE alarm_id = ? AND status IN (?, ?)
+            ORDER BY started_at DESC, id DESC
+            LIMIT 1
+            """,
+            (alarm_id, AlarmSessionStatus.RINGING, AlarmSessionStatus.SNOOZED),
+        )
     )
 
 def get_all_alarm_sessions():
-    return db.fetch_all("SELECT * FROM alarm_sessions ORDER BY started_at DESC")
+    return serialize_alarm_session_rows(
+        db.fetch_all("SELECT * FROM alarm_sessions ORDER BY started_at DESC")
+    )
 
 
 def get_latest_alarm_session():
-    return db.fetch_one(
-        "SELECT * FROM alarm_sessions ORDER BY started_at DESC, id DESC LIMIT 1"
+    return serialize_alarm_session_row(
+        db.fetch_one(
+            "SELECT * FROM alarm_sessions ORDER BY started_at DESC, id DESC LIMIT 1"
+        )
     )
 
 
 def get_active_alarm_session():
-    return db.fetch_one(
-        """
-        SELECT * FROM alarm_sessions
-        WHERE status IN (?)
-        ORDER BY started_at DESC, id DESC
-        LIMIT 1
-        """, (AlarmSessionStatus.RINGING,)
+    return serialize_alarm_session_row(
+        db.fetch_one(
+            """
+            SELECT * FROM alarm_sessions
+            WHERE status IN (?)
+            ORDER BY started_at DESC, id DESC
+            LIMIT 1
+            """,
+            (AlarmSessionStatus.RINGING,),
+        )
     )
-    
+
 def get_latest_snoozed_alarm_session():
-    return db.fetch_one(
-        """
-        SELECT * FROM alarm_sessions
-        WHERE status = ?
-        ORDER BY snoozed_until DESC, id DESC
-        LIMIT 1
-        """, (AlarmSessionStatus.SNOOZED,)
+    return serialize_alarm_session_row(
+        db.fetch_one(
+            """
+            SELECT * FROM alarm_sessions
+            WHERE status = ?
+            ORDER BY snoozed_until DESC, id DESC
+            LIMIT 1
+            """,
+            (AlarmSessionStatus.SNOOZED,),
+        )
     )
 
 
 def update_alarm_session(
-    session_id,
-    status=None,
-    snoozed_until=None,
-    label=None,
-    ring_count=None,
+    session_id: int,
+    status: AlarmSessionStatus=None,
+    snoozed_until: str=None,
+    label: str=None,
+    ring_count: int=None,
     clear_snoozed_until=False,
 ):
     fields = []
@@ -120,7 +134,7 @@ def update_alarm_session(
     return get_alarm_session_by_id(session_id)
 
 
-def delete_alarm_session(session_id):
+def delete_alarm_session(session_id: int):
     session = get_alarm_session_by_id(session_id)
     if not session:
         return None
