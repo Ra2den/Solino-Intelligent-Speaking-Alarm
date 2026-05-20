@@ -15,10 +15,11 @@ import sqlite3
 import json
 
 from weatherForecast import get_current_weather, get_current_weather_from_specific_location
+from tagesschau import get_tagesschau_homepage, get_full_news_from_headline_id, search_news
 from ai_db_service import add_alarm, get_active_alarms, toggle_alarm, delete_alarm_by_time, get_all_alarms
 from speechToText import STTService
 
-with open('./settings.json', 'r') as file:
+with open('../settings.json', 'r') as file:
     settings = json.load(file)
 if settings:
     speaker = settings["speaker"]
@@ -94,7 +95,6 @@ def list_all_alarms():
 
     return all_alarms
 
-
 @tool
 def remove_alarm_by_time(uhrzeit: str):
     """Löscht einen Wecker basierend auf der Uhrzeit (Format HH:MM)."""
@@ -107,6 +107,7 @@ def get_time_now():
     """Gibt die aktuelle Uhrzeit und das Datum zurück"""
     return f"Die Zeit ist gerade {datetime.datetime.now()}"
 
+
 @tool
 def get_weather_nowcast():
     """Gibt das aktuelle Wetter am aktuellen Standort"""
@@ -115,11 +116,41 @@ def get_weather_nowcast():
 
 @tool
 def get_weather_nowcast_at_location(stadt: str, region:str):
-    """"Gibt das aktuelle Wetter in einer bestimmten Stadt zurück. Hier muss unbedingt Stadt, und Region übergeben werden"""
+    """Gibt das aktuelle Wetter in einer bestimmten Stadt zurück. Hier muss unbedingt Stadt, und Region übergeben werden"""
     weather_list = get_current_weather_from_specific_location(stadt, region)
     return weather_list
 
-tools = [set_alarm, get_time_now,list_active_alarms, list_all_alarms, remove_alarm_by_time, get_weather_nowcast, get_weather_nowcast_at_location]
+
+@tool
+def get_latest_news():
+    """Gibt die aktuellen Nachtrichten zurück"""
+    news_list = get_tagesschau_homepage()
+    return news_list
+
+@tool
+def get_detailed_headline_news(id: str):
+    """Gibt eine detailierte Übersicht für eine bestimmte Schlagzeile zurück. Hier muss nach einer bereits vorgelesenen Schlagzeile gefragt werden."""
+    detailed_headline = get_full_news_from_headline_id(id)
+    return detailed_headline
+
+@tool
+def get_searched_news(searchText: str):
+    """Gibt eine übersicht über Nachrichten zu einem bestimmten Thema. Hier muss nach einem bestimmten Thema gefragt werden und dieses Thema soll als Stichwort übergeben werden."""
+    detailed_headline = search_news(searchText)
+    return detailed_headline
+
+tools = [
+    set_alarm,
+    get_time_now,
+    list_active_alarms,
+    list_all_alarms,
+    remove_alarm_by_time,
+    get_weather_nowcast,
+    get_weather_nowcast_at_location,
+    get_latest_news,
+    get_detailed_headline_news,
+    get_searched_news
+]
 tool_node = ToolNode(tools)
 
 
@@ -169,7 +200,7 @@ config = {"configurable": {"thread_id": "haupt_user_session"}}
 
 def speak(text):
     #print(f"Generiere Audio für: {text}...")
-    # 'aplay' ist der Standard-Player auf Linux, 'afplay' auf Mac
+    # 'aplay' ist der Standard-Player auf Linux (pw-play funktioniert aber besser), 'afplay' auf Mac
     if speaker == "male":
         model = "--model models/de_DE-thorsten-high.onnx"
     else:
