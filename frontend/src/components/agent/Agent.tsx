@@ -10,9 +10,11 @@ import { useWeatherNowcast } from "../../hooks/weather/useWeatherNowcast";
 import cloudM from "../../assets/agent/cloud_m.png";
 import cloudS from "../../assets/agent/cloud_s.png";
 import raindropIcon from "../../assets/agent/raindrop.svg";
+import thunderbolt from "../../assets/agent/thunderbolt.svg";
 import { TemperatureDisplay } from "./TemperatureDisplay";
 import { PhaseSchema, type Phase } from "../../models/simulator/phase.model.js";
 import { usePhase } from "../../hooks/usePhase";
+import { WeatherConditionSchema } from "../../models/weather/weather-nowcast.model.js";
 
 const RAIN_DROP_POSITIONS = [
   "absolute -bottom-9 left-[5%] z-0 w-[20%]",
@@ -33,9 +35,9 @@ export function Agent() {
 
   // Weather Conditionals
   const isRainy =
-    condition === "Drizzle" ||
-    condition === "Rain" ||
-    condition === "Thunderstorm";
+    condition === WeatherConditionSchema.enum.Drizzle ||
+    condition === WeatherConditionSchema.enum.Rain ||
+    condition === WeatherConditionSchema.enum.Thunderstorm;
   const animationsEnabled = true;
 
   const shouldAnimateRain =
@@ -92,10 +94,10 @@ export function Agent() {
         />
         {/* Weather */}
         <div ref={weatherLayerRef}>
-          {condition == "Clouds" && displayCloudyWeather()}
-          {(condition == "Drizzle" ||
-            condition == "Rain" ||
-            condition == "Thunderstorm") &&
+          {condition === WeatherConditionSchema.enum.Clouds && displayCloudyWeather()}
+          {(condition === WeatherConditionSchema.enum.Drizzle ||
+            condition === WeatherConditionSchema.enum.Rain ||
+            condition === WeatherConditionSchema.enum.Thunderstorm) &&
             displayRainyWeather()}
         </div>
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
@@ -211,6 +213,15 @@ export function Agent() {
             alt="Raindrop"
           />
         ))}
+
+        {/*Thunderbolt*/} 
+        {condition === WeatherConditionSchema.enum.Thunderstorm && startIndex%2 == 0 && ( //nur an jeder 2. Wolke
+          <img
+            src={thunderbolt}
+            alt="Thunderbolt"
+            className="absolute bottom-[-25%] left-[40%] z-0 w-[20%]"
+            /> 
+        )}
       </>
     );
   }
