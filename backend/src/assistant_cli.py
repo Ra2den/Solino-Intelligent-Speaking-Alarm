@@ -18,9 +18,9 @@ def main():
     print("Der Alarm-Monitor läuft über FastAPI.")
     print("= " * 15)
 
-    print("📦 Überprüfe und lade fehlende Wake-Word-Modelle herunter...")
+    print("Überprüfe und lade fehlende Wake-Word-Modelle herunter...")
     openwakeword.utils.download_models()
-    print("✅ Modelle erfolgreich überprüft/heruntergeladen.")
+    print("Modelle erfolgreich überprüft/heruntergeladen.")
 
     oww_model = Model(inference_framework="onnx")
     
@@ -28,7 +28,7 @@ def main():
     if wake_word not in oww_model.models:
         wake_word = list(oww_model.models.keys())[0]
         
-    print(f"✨ Aktivierungswort gesetzt auf: '{wake_word}'")
+    print(f"Aktivierungswort gesetzt auf: '{wake_word}'")
 
     p = pyaudio.PyAudio()
     audio_stream = p.open(
@@ -40,7 +40,7 @@ def main():
     )
 
     try:
-        print("\n[Lausche...] Sag einfach dein Wake Word.")
+        print(f"\n[Lausche...] Sag \"{wake_word}\"")
         
         while True:
             # Kontinuierlich Audio vom Mikrofon lesen
