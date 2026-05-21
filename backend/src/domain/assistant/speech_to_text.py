@@ -4,6 +4,12 @@ import os
 from faster_whisper import WhisperModel
 import struct
 import math
+from pathlib import Path
+
+
+BACKEND_ROOT = Path(__file__).resolve().parents[3]
+AUDIO_DIR = BACKEND_ROOT / "assets" / "audio"
+AUDIO_DIR.mkdir(parents=True, exist_ok=True)
 
 class STTService:
     def __init__(self, model_size="base"):
@@ -19,6 +25,7 @@ class STTService:
         self.chunk = 1024
 
     def record_audio(self, duration=6, filename="user_input.wav"):
+        audio_path = AUDIO_DIR / filename
         p = pyaudio.PyAudio()
         stream = p.open(format=self.format,
                         channels=self.channels,
@@ -32,10 +39,12 @@ class STTService:
         audio_break = 0
 
         while(audio_break < 15):
-            data = stream.read(self.chunk)
+            # Drop overflowed frames instead of crashing the CLI when the
+            # capture loop briefly falls behind.
+            data = stream.read(self.chunk, exception_on_overflow=False)
             frames.append(data)
             
-            count = len(data) / 2
+            count = len(data) // 2
             format_string = "%dh" % count
             shorts = struct.unpack(format_string, data)
             
@@ -56,14 +65,14 @@ class STTService:
         stream.close()
         p.terminate()
 
-        wf = wave.open(filename, 'wb')
+        wf = wave.open(str(audio_path), 'wb')
         wf.setnchannels(self.channels)
         wf.setsampwidth(p.get_sample_size(self.format))
         wf.setframerate(self.rate)
         wf.writeframes(b''.join(frames))
         wf.close()
         
-        return filename
+        return str(audio_path)
 
     def transcribe(self, audio_path):
         """Wandelt die WAV-Datei in Text um."""

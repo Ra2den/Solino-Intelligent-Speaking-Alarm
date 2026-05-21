@@ -1,7 +1,7 @@
 import requests
 import json
 import re
-from schemas.tagesschau_schema import NewsHeadline, DetailedNews
+from domain.news.schemas import NewsHeadline, DetailedNews
 
 BASE_URL = "https://www.tagesschau.de/api2u"
 NO_TAGESSCHAU_ERROR_MSG = "Fehler beim Abrufen der aktuellen Tagesschau Daten"
