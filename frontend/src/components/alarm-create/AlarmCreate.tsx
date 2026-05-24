@@ -13,8 +13,8 @@ import { ActionPill } from "./ActionPill";
 import { Timepicker } from "timepicker-ui-react";
 import { alarmsService } from "../../services/alarms.service";
 import AlarmNameRecorder from "../../services/alarm-name-recorder";
-import micIcon from "../../assets/mic.svg";
-import micRedIcon from "../../assets/mic-red.svg";
+import micIcon from "../../assets/alarm-create/mic.svg";
+import micRedIcon from "../../assets/alarm-create/mic-red.svg";
 
 type Inputs = {
   time: string;
