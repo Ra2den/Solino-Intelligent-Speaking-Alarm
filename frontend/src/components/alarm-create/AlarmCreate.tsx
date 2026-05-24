@@ -6,12 +6,15 @@ import {
 } from "../../models/alarm/alarm.model";
 import tagIcon from "../../assets/alarm-create/tag.svg";
 import { Controller, useForm } from "react-hook-form";
-import { useEffect } from "react";
+import { useEffect, useRef, useState } from "react";
 import { SettingsRow } from "./SettingsRow";
 import { WeekdayChips } from "./WeekdayChips";
 import { ActionPill } from "./ActionPill";
 import { Timepicker } from "timepicker-ui-react";
 import { alarmsService } from "../../services/alarms.service";
+import AlarmNameRecorder from "../../services/alarm-name-recorder";
+import micIcon from "../../assets/mic.svg";
+import micRedIcon from "../../assets/mic-red.svg";
 
 type Inputs = {
   time: string;
@@ -25,21 +28,44 @@ type AlarmCreateProps = {
 };
 
 export function AlarmCreate({ alarm, onCreate }: AlarmCreateProps) {
-  const { handleSubmit, control, reset } = useForm<Inputs>({
+  const { handleSubmit, control, reset, setValue } = useForm<Inputs>({
     defaultValues: {
       time: alarm?.time ?? "00:00",
       recurring_days: alarm?.recurring_days ?? null,
       label: alarm?.label ?? "Wecker 1",
     },
   });
+  const [isListening, setIsListening] = useState<boolean>(false);
+  const [isProcessing, setIsProcessing] = useState<boolean>(false);
+  const [error, setError] = useState<string>("");
+
+  const recorderRef = useRef<AlarmNameRecorder | null>(null);
 
   useEffect(() => {
+    // 1. Recorder-Instanz mit den drei Callbacks erstellen
+    recorderRef.current = new AlarmNameRecorder(
+      (listening: boolean) => setIsListening(listening),
+      (processing: boolean) => setIsProcessing(processing),
+      (text: string) => setValue("label", text, { shouldDirty: true }),
+      (errMsg: string) => setError(errMsg),
+    );
+
+    // 2. WebSocket-Verbindung aufbauen
+    recorderRef.current.connect();
+
     reset({
       time: alarm?.time ?? "00:00",
       recurring_days: alarm?.recurring_days ?? null,
       label: alarm?.label ?? "Wecker 1",
     });
-  }, [alarm, reset]);
+
+    // 3. Verbindung beim Schließen der Komponente sauber trennen
+    return () => {
+      if (recorderRef.current) {
+        recorderRef.current.disconnect();
+      }
+    };
+  }, [alarm, reset, setValue]);
 
   return (
     <>
@@ -105,9 +131,53 @@ export function AlarmCreate({ alarm, onCreate }: AlarmCreateProps) {
                 control={control}
                 name="label"
                 render={({ field }) => (
-                  <SettingsRow icon={tagIcon} label={field.value} />
+                  <div className="flex gap-3">
+                    {isListening && (
+                      <SettingsRow icon={tagIcon} label={"Hört zu..."} />
+                    )}
+                    {isProcessing && (
+                      <SettingsRow icon={tagIcon} label={"Verarbeite..."} />
+                    )}
+                    {!isListening && !isProcessing && (
+                      <SettingsRow icon={tagIcon} label={field.value} />
+                    )}
+                    <button
+                      type="button"
+                      className={`flex w-16 items-center justify-center bg-white/85 p-3.75 text-black rounded-[5px] ${isListening ? "mix-blend-normal" : "mix-blend-soft-light"} ${isProcessing ? "cursor-wait opacity-70" : ""}`}
+                      onClick={() => {
+                        handleButtonClick();
+                      }}
+                      disabled={isProcessing}
+                      aria-label={
+                        isListening
+                          ? "Aufnahme des Alarmnamens stoppen"
+                          : isProcessing
+                            ? "Alarmname wird verarbeitet"
+                          : "Aufnahme des Alarmnamens starten"
+                      }
+                    >
+                      {!isListening ? (
+                        <img
+                          src={micIcon}
+                          alt=""
+                          className="h-7.5 w-7.5 shrink-0"
+                          aria-hidden="true"
+                        />
+                      ) : (
+                        <img
+                          src={micRedIcon}
+                          alt=""
+                          className="h-7.5 w-7.5 shrink-0"
+                          aria-hidden="true"
+                        />
+                      )}
+                    </button>
+                  </div>
                 )}
               />
+              {error && (
+                <p className="px-1 text-sm font-medium text-red-600">{error}</p>
+              )}
               {/* <SettingsRow icon={bellIcon} label="Ton" bottomRounded={true} /> */}
             </div>
             <div className="relative z-10 mt-auto flex justify-center pt-12.5">
@@ -118,6 +188,19 @@ export function AlarmCreate({ alarm, onCreate }: AlarmCreateProps) {
       </form>
     </>
   );
+
+  function handleButtonClick() {
+    if (!recorderRef.current) return;
+    if (isProcessing) return;
+
+    setError(""); // Alten Fehler zurücksetzen
+
+    if (isListening) {
+      recorderRef.current.stopRecording();
+    } else {
+      recorderRef.current.startRecording();
+    }
+  }
 
   async function onSubmit(data: Inputs): Promise<void> {
     if (typeof alarm?.id === "number") {

@@ -27,7 +27,7 @@ export function AlarmCard({ alarm, isWidget, onToggle }: AlarmCardProps) {
           <>
             {/* Zeile 1: Name + Icon */}
             <div className="flex items-center justify-between w-full">
-              <span className="text-white text-[40px] font-medium">
+              <span className="text-white text-[40px] font-medium truncate max-w-96">
                 {alarm?.label}
               </span>
               <img
