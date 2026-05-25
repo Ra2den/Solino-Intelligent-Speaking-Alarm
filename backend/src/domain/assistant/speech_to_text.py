@@ -4,6 +4,7 @@ import os
 from faster_whisper import WhisperModel
 import struct
 import math
+from threading import Event
 from pathlib import Path
 
 
@@ -23,9 +24,14 @@ class STTService:
         self.channels = 1
         self.rate = 16000
         self.chunk = 1024
+        self.stop_event = Event()
+
+    def stop_recording(self):
+        self.stop_event.set()
 
     def record_audio(self, duration=6, filename="user_input.wav"):
         audio_path = AUDIO_DIR / filename
+        self.stop_event.clear()
         p = pyaudio.PyAudio()
         stream = p.open(format=self.format,
                         channels=self.channels,
@@ -38,7 +44,7 @@ class STTService:
 
         audio_break = 0
 
-        while(audio_break < 15):
+        while audio_break < 15 and not self.stop_event.is_set():
             # Drop overflowed frames instead of crashing the CLI when the
             # capture loop briefly falls behind.
             data = stream.read(self.chunk, exception_on_overflow=False)
@@ -60,10 +66,13 @@ class STTService:
             print(f"LEVEL : {level} BREAK : {audio_break}")
 
         print("\nAufnahme beendet.")
-        
+
         stream.stop_stream()
         stream.close()
         p.terminate()
+
+        if not frames:
+            return None
 
         wf = wave.open(str(audio_path), 'wb')
         wf.setnchannels(self.channels)
