@@ -20,10 +20,10 @@ def _find_audio_file() -> Path:
 
 
 def _find_player() -> str:
-    for candidate in ("afplay", "aplay"):
+    for candidate in ("afplay", "pw-play", "aplay"):
         if shutil.which(candidate):
             return candidate
-    raise RuntimeError("No supported audio player found. Expected 'afplay' or 'aplay'.")
+    raise RuntimeError("No supported audio player found. Expected 'afplay', 'pw-play' or 'aplay'.")
 
 
 class AlarmPlayer:
