@@ -29,7 +29,7 @@ export default function TimeWidget({
   const day_formatter = new Intl.DateTimeFormat(
     locale ?? undefined,
     options ?? {
-      weekday: "long",
+      weekday: "short",
       day: "2-digit",
       month: "long",
     },
@@ -40,7 +40,7 @@ export default function TimeWidget({
       <div className="flex flex-col justify-center items-center w-full h-full pt-6.25 pb-0 ps-12.5 pe-12.5 rounded-[50px]">
         <div className="text-white text-center font-medium">
           <time className="text-[40px]" dateTime={now.toISOString()}>
-            {day_formatter.format(now)}{" "}
+            {day_formatter.format(now).replace(",", "")}{" "}
           </time>
           <time className="text-[100px]" dateTime={now.toISOString()}>
             {time_formatter.format(now)}{" "}

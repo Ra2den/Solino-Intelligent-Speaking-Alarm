@@ -1,7 +1,10 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 from typing import List, Optional
 from domain.alarms.schemas import Alarm, AlarmCreate
 from domain.alarms import service as alarms_service
+from domain.alarms.schemas import TranscriptionResponse 
+from domain.assistant.speech_to_text import STTService
+import asyncio
 
 router = APIRouter(prefix="/alarms", tags=["Alarms"])
 
@@ -92,3 +95,99 @@ def delete_alarm(alarm_id: int):
         :rtype: Optional[Alarm]
     """
     return alarms_service.delete_alarm_by_id(alarm_id)
+
+
+is_recording_globally = False
+
+@router.websocket("/ws/record-name")
+async def websocket_record_name(websocket: WebSocket):
+    """
+    WebSocket endpoint to record an alarm name via audio,
+    transcribe it, and stream the status and result back to the frontend.
+    """
+    await websocket.accept()
+    global is_recording_globally
+    stt_service = None
+    recording_task = None
+
+    async def finalize_recording():
+        nonlocal stt_service
+        global is_recording_globally
+
+        try:
+            if stt_service is None:
+                return
+
+            loop = asyncio.get_running_loop()
+            audio_file = await loop.run_in_executor(
+                None,
+                lambda: stt_service.record_audio(duration=5),
+            )
+
+            if audio_file is None:
+                response = TranscriptionResponse(isListening=False)
+            else:
+                user_text = await loop.run_in_executor(
+                    None, stt_service.transcribe, audio_file
+                )
+
+                if user_text and user_text.strip():
+                    response = TranscriptionResponse(
+                        isListening=False,
+                        transcription=user_text.strip()
+                    )
+                else:
+                    response = TranscriptionResponse(
+                        isListening=False,
+                        transcription="",
+                        error="Ich habe leider nichts gehört."
+                    )
+
+        except Exception as e:
+            response = TranscriptionResponse(
+                isListening=False,
+                error=f"Fehler bei der Verarbeitung: {str(e)}"
+            )
+        finally:
+            is_recording_globally = False
+            stt_service = None
+
+        await websocket.send_text(response.model_dump_json())
+    
+    try:
+        while True:
+            data = await websocket.receive_json()
+            action = data.get("action")
+
+            if action == "start":
+                if is_recording_globally:
+                    response = TranscriptionResponse(
+                        isListening=False, 
+                        error="Es läuft bereits eine Aufnahme auf dem Server."
+                    )
+                    await websocket.send_text(response.model_dump_json())
+                    continue
+                
+                is_recording_globally = True
+                stt_service = STTService(model_size="base")
+                
+                response = TranscriptionResponse(isListening=True)
+                await websocket.send_text(response.model_dump_json())
+                recording_task = asyncio.create_task(finalize_recording())
+
+            elif action == "stop":
+                if stt_service is not None:
+                    stt_service.stop_recording()
+
+                is_recording_globally = False
+                response = TranscriptionResponse(isListening=False)
+                await websocket.send_text(response.model_dump_json())
+
+    except WebSocketDisconnect:
+        print("Frontend hat die Verbindung getrennt.")
+    finally:
+        if stt_service is not None:
+            stt_service.stop_recording()
+        if recording_task is not None and not recording_task.done():
+            await recording_task
+        is_recording_globally = False

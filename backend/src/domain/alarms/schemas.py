@@ -1,3 +1,4 @@
+from datetime import datetime
 from pydantic import BaseModel
 from enum import Enum
 from typing import Optional
@@ -32,8 +33,13 @@ class AlarmSession(BaseModel):
     id: int
     alarm_id: int
     status: AlarmSessionStatus
-    started_at: str
-    snoozed_until: str | None = None
+    started_at: datetime
+    snoozed_until: datetime | None = None
     label: str | None = None
     ring_count: int = 0
     message: str | None = None
+
+class TranscriptionResponse(BaseModel):
+    transcription: Optional[str] = None
+    isListening: bool
+    error: Optional[str] = None

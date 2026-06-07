@@ -193,10 +193,11 @@ def start_ringing_sesssion(alarm):
     ):
         return
 
+    started_at_time_value = str(datetime.now().isoformat())
     current_session: AlarmSession = alarm_sessions_repo.create_alarm_session(
         alarm_id=alarm["id"], 
         status=AlarmSessionStatus.RINGING, 
-        started_at=datetime.now().isoformat(),
+        started_at=datetime.fromisoformat(started_at_time_value),
         label=alarm["label"],
     )
     alarm_player.start_loop(session_id=current_session["id"])
@@ -210,10 +211,13 @@ def stop_ringing_session(session_id: int, status=AlarmSessionStatus.DISMISSED):
         )
         return alarm_sessions_repo.get_alarm_session_by_id(session_id)
 
+    snoozed_until_time = (datetime.now() + timedelta(minutes=5)).isoformat() if status == AlarmSessionStatus.SNOOZED else None
+    if (snoozed_until_time != None):
+        snoozed_until_time = datetime.fromisoformat(str(snoozed_until_time))
     session = alarm_sessions_repo.update_alarm_session(
         session_id,
         status=status,
-        snoozed_until=(datetime.now() + timedelta(minutes=5)).isoformat() if status == AlarmSessionStatus.SNOOZED else None,
+        snoozed_until=snoozed_until_time,
         clear_snoozed_until=status != AlarmSessionStatus.SNOOZED,
     )      
     alarm_player.stop()

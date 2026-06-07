@@ -3,11 +3,11 @@ from pydantic import BaseModel
 
 class NewsHeadline(BaseModel):
     id: str
-    time: str
+    time: datetime
     headline: str
 
 class DetailedNews(BaseModel):
     id: str
-    time: str
+    time: datetime
     headline: str
     content: str
