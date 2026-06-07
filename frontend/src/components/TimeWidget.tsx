@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { createDayFormatter, createTimeFormatter } from "../utils/time.util";
 
 type TimeWidgetProps = {
   locale?: string;
@@ -18,32 +19,18 @@ export default function TimeWidget({
     return () => clearInterval(id);
   }, [intervalMs]);
 
-  const time_formatter = new Intl.DateTimeFormat(
-    locale ?? undefined,
-    options ?? {
-      hour: "2-digit",
-      minute: "2-digit",
-    },
-  );
-
-  const day_formatter = new Intl.DateTimeFormat(
-    locale ?? undefined,
-    options ?? {
-      weekday: "short",
-      day: "2-digit",
-      month: "long",
-    },
-  );
+  const timeFormatter = createTimeFormatter(locale, options);
+  const dayFormatter = createDayFormatter(locale, options);
 
   return (
     <div className="w-full h-full relative rounded-[50px] bg-black mix-blend-soft-light">
       <div className="flex flex-col justify-center items-center w-full h-full pt-6.25 pb-0 ps-12.5 pe-12.5 rounded-[50px]">
         <div className="text-white text-center font-medium">
           <time className="text-[40px]" dateTime={now.toISOString()}>
-            {day_formatter.format(now).replace(",", "")}{" "}
+            {dayFormatter.format(now).replace(",", "")}{" "}
           </time>
           <time className="text-[100px]" dateTime={now.toISOString()}>
-            {time_formatter.format(now)}{" "}
+            {timeFormatter.format(now)}{" "}
           </time>
         </div>
       </div>
