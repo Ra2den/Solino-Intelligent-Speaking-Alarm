@@ -13,6 +13,8 @@ import json
 import subprocess
 from pathlib import Path
 import shutil
+import requests
+import logging
 
 import domain.alarms.service as alarm_service
 from domain.assistant.speech_to_text import STTService
@@ -25,6 +27,9 @@ from domain.news.service import (
     get_full_news_from_headline_id, 
     search_news
 )
+
+logger = logging.getLogger(__name__)
+OLLAMA_BASE_URL = "http://localhost:11434"
 
 BACKEND_ROOT = Path(__file__).resolve().parents[3]
 ASSETS_DIR = BACKEND_ROOT / "assets"
@@ -274,6 +279,17 @@ def _play_audio_file(audio_path):
             f"Audio konnte nicht abgespielt werden: {audio_path}. "
             f"Player: {player}. Fehler: {error_output or 'Unbekannter Fehler'}"
         )
+
+def is_ollama_available():
+    """Check if Ollama service is available and accessible."""
+    try:
+        response = requests.get(
+            f"{OLLAMA_BASE_URL}/api/tags",
+            timeout=2
+        )
+        return response.status_code == 200
+    except (requests.ConnectionError, requests.Timeout, Exception):
+        return False
 
 def wake_up(time, alarm_label=""):
     print(f"!!! ALARM !!! Es ist {time} Uhr!")

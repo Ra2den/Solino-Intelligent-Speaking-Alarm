@@ -37,3 +37,11 @@ class AlarmSession(BaseModel):
     label: str | None = None
     ring_count: int = 0
     message: str | None = None
+
+class AlarmSessionWsType(str, Enum):
+    INITIAL_STATE = "INITIAL_STATE"
+    UPDATE = "UPDATE"
+
+class AlarmSessionWsMessage(BaseModel):
+    type: str
+    session: Optional[AlarmSession] = None
