@@ -19,11 +19,20 @@ export function HomeScreen() {
 
   if (isRinging && currentAlarmSession) {
     return (
-      <AlarmRingingScreen
-        session={currentAlarmSession}
-        onStop={stopAlarm}
-        onSnooze={() => snoozeAlarm()}
-      />
+      <div className="w-full h-full overflow-hidden grid grid-cols-5 p-12 gap-6">
+        {/* Alarm-Ringing Widget */}
+        <div className="col-span-2 h-full">
+          <AlarmRingingScreen
+            session={currentAlarmSession}
+            onStop={stopAlarm}
+            onSnooze={() => snoozeAlarm()}
+          />
+        </div>
+        {/* Agent bleibt rechts */}
+        <div className="col-span-3">
+          <Agent />
+        </div>
+      </div>
     );
   }
 
