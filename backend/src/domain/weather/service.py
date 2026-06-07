@@ -1,12 +1,14 @@
 import requests
 import json
 import math
-from datetime import datetime, timezone
+import locale
 import os
+
+from datetime import datetime, timezone
 from dotenv import load_dotenv
 from geopy.geocoders import Photon
-
 from domain.weather.schemas import WeatherForecast, WeatherNowcast, Sunrise, Sunset
+
 load_dotenv()
 
 API_KEY = os.getenv("API_KEY")
@@ -17,6 +19,23 @@ WIND_DIRECTIONS = ['Norden', 'Nord-Nord-Ost', 'Nord-Ost', 'Ost-Nord-Ost',
                    'Osten', 'Ost-Süd-Ost', 'Süd-Ost', 'Süd-Süd-Ost', 
                    'Süden', 'Süd-Süd-West', 'Süd-West', 'West-Süd-West', 
                    'Westen', 'West-Nord-West', 'Nord-West', 'Nord-Nord-West']
+
+API_WEATHER_CONDITIONS_ENUM = {
+    "Thunderstorm": LocaleWeatherConditions.Thunderstorm.value,
+    "Drizzle": LocaleWeatherConditions.Drizzle.value,
+    "Rain": LocaleWeatherConditions.Rain.value,
+    "Clear": LocaleWeatherConditions.Clear.value,
+    "Clouds": LocaleWeatherConditions.Clouds.value,
+    "thunderstorm": LocaleWeatherConditions.Thunderstorm.value,
+    "shower rain": LocaleWeatherConditions.Drizzle.value,
+    "rain": LocaleWeatherConditions.Rain.value,
+    "clear sky": LocaleWeatherConditions.Clear.value,
+    "few clouds": LocaleWeatherConditions.Clouds.value,
+    "scattered clouds": LocaleWeatherConditions.ScatteredClouds.value,
+    "broken clouds": LocaleWeatherConditions.BrokenClouds.value,
+    "snow": LocaleWeatherConditions.Snow.value,
+    "mist": LocaleWeatherConditions.Mist.value,
+}
 
 # --- Constants for json fetching ---
 
@@ -94,20 +113,23 @@ def fetch_and_parse_weather_nowcast(cords):
     if data is None:
         return None
 
-    curr_temp = convert_kelvin_to_celsius(data[WEATHER_CONDITION][TEMPERATURE])
-    fells_like = convert_kelvin_to_celsius(data[WEATHER_CONDITION][TEMPERATURE_FEELS_LIKE])
+    curr_temp = round_half_up(convert_kelvin_to_celsius(data[WEATHER_CONDITION][TEMPERATURE]))
+    fells_like = round_half_up(convert_kelvin_to_celsius(data[WEATHER_CONDITION][TEMPERATURE_FEELS_LIKE]))
 
     weather_cond_main = data[WEATHER][0][WEATHER_CONDITION]
     weather_cond_description = data[WEATHER][0][WEATHER_DESCRIPTION]
 
-    wind_speed = convert_ms_to_kmh(data[WIND][WIND_SPEED])
+    wind_speed = round_half_up(convert_ms_to_kmh(data[WIND][WIND_SPEED]))
     wind_direction = deg_to_compass(data[WIND][WIND_DIRECTION])
 
+
+    
+
     weather_nowcaset_string = (
-        f"Das Wetter in {data[CITY_NAME]} ist aktuell bei {round_half_up(curr_temp)} °C "
-        f"Bei gefühlten {round_half_up(fells_like)} °C. "
-        f"Bei hauptsächlich {weather_cond_main} und {weather_cond_description} Wetter. "
-        f"Mit Windgeschwindigkeiten von {round_half_up(wind_speed)} km/h, aus {wind_direction} kommend."
+        f"Das Wetter in {data[CITY_NAME]} ist aktuell bei {format_decimal_to_locale(curr_temp)} °C "
+        f"Bei gefühlten {format_decimal_to_locale(fells_like)} °C. "
+        f"Bei hauptsächlich {get_locale_weather_conditions(weather_cond_main)} und {get_locale_weather_conditions(weather_cond_description)}. "
+        f"Mit Windgeschwindigkeiten von {format_decimal_to_locale(wind_speed)} km/h, aus {wind_direction} kommend."
     )
 
     print(weather_nowcaset_string)
@@ -234,8 +256,18 @@ def deg_to_compass(deg):
 def round_half_up(n):
     return math.floor(n * 10 + 0.5) / 10
 
+def format_decimal_to_locale(number, to_locale="de_DE.utf8"):
+    locale.setlocale(locale.LC_NUMERIC, to_locale)
+    formatted_number = locale.format_string("%.1f", number, grouping=True)
+    return formatted_number
+
+def get_locale_weather_conditions(api_condition):
+    return API_WEATHER_CONDITIONS_ENUM.get(api_condition, api_condition)
+
 def test_weather_forecast():
     print(get_weather_forecast_for_api())
     print(get_current_weather_for_api())
     print(get_sunrise_time())
     print(get_sunset_time())
+
+get_current_weather()

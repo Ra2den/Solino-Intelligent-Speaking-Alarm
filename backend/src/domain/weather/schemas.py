@@ -9,6 +9,17 @@ class WeatherCondition(str,Enum):
     Clear = 'Clear'
     Clouds = 'Clouds'
 
+class LocaleWeatherConditions(str,Enum):
+    Thunderstorm = 'Gewitter'
+    Drizzle = 'Nieselregen'
+    Rain = 'Regen'
+    Clear = 'klarerem Himmel'
+    Clouds = 'bewölktem Himmel'
+    ScatteredClouds = 'vereinzelten Wolken'
+    BrokenClouds = 'aufgelockerten Wolken'
+    Snow = 'Schneefall'
+    Mist = 'Nebel'
+
 class WeatherNowcast(BaseModel):
     time: str
     temperature: float
