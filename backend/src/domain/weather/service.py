@@ -7,8 +7,7 @@ import os
 from datetime import datetime, timezone
 from dotenv import load_dotenv
 from geopy.geocoders import Photon
-from domain.weather.schemas import WeatherForecast, WeatherNowcast, Sunrise, Sunset
-
+from domain.weather.schemas import WeatherForecast, WeatherNowcast, Sunrise, Sunset, LocaleWeatherConditions
 load_dotenv()
 
 API_KEY = os.getenv("API_KEY")
@@ -122,14 +121,22 @@ def fetch_and_parse_weather_nowcast(cords):
     wind_speed = round_half_up(convert_ms_to_kmh(data[WIND][WIND_SPEED]))
     wind_direction = deg_to_compass(data[WIND][WIND_DIRECTION])
 
+    forecast_data = get_weather_forecast_datatype(fetch_and_parse_weather_forecast(cords))
+    forecast_lookup = []
+    forecast_lookup.append(forecast_data.forecast[1])
+    forecast_lookup.append(forecast_data.forecast[2])
+    forecast_lookup.append(forecast_data.forecast[3])
+    forecast_lookup.append(forecast_data.forecast[4])
 
-    
+    max_temp_during_day, max_temp_time = get_max_temp_from_forecast(forecast_lookup)
+    min_temp_during_day, min_temp_time = get_min_temp_from_forecast(forecast_lookup)
 
     weather_nowcaset_string = (
         f"Das Wetter in {data[CITY_NAME]} ist aktuell bei {format_decimal_to_locale(curr_temp)} °C "
         f"Bei gefühlten {format_decimal_to_locale(fells_like)} °C. "
         f"Bei hauptsächlich {get_locale_weather_conditions(weather_cond_main)} und {get_locale_weather_conditions(weather_cond_description)}. "
-        f"Mit Windgeschwindigkeiten von {format_decimal_to_locale(wind_speed)} km/h, aus {wind_direction} kommend."
+        f"Mit Windgeschwindigkeiten von {format_decimal_to_locale(wind_speed)} km/h, aus {wind_direction} kommend. "
+        f"Gegen {max_temp_time} Uhr wird die Temperatur auf {format_decimal_to_locale(max_temp_during_day)} °C ansteigen und gegen {min_temp_time} Uhr auf {format_decimal_to_locale(min_temp_during_day)} °C fallen."
     )
 
     print(weather_nowcaset_string)
@@ -180,12 +187,17 @@ def fetch_and_parse_weather_forecast(cords):
     place_name = data[CITY][CITY_NAME]
     current_time = datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
 
-    print(f"Wetter um {current_time} in {place_name}: {data}")
     return data
 
 def get_weather_forecast_for_api():
     city_cords = get_cords_from_ip_location()
     data = fetch_weather_forecast(city_cords)
+    if data is None:
+        return None
+
+    return get_weather_forecast_datatype(data)
+
+def get_weather_forecast_datatype(data):
     if data is None:    
         return None
 
@@ -238,6 +250,28 @@ def get_sunset_time():
 
     return weather_nowcast_data
 
+def get_max_temp_from_forecast(forecast):
+    max_temp = forecast[0].temperature
+    max_temp_time = forecast[0].time[11:13]
+
+    for data in forecast:
+        if data.temperature > max_temp:
+            max_temp = data.temperature
+            max_temp_time = data.time[11:13]
+
+    return max_temp, max_temp_time
+
+def get_min_temp_from_forecast(forecast):
+    min_temp = forecast[0].temperature
+    min_temp_time = forecast[0].time[11:13]
+
+    for data in forecast:
+            if data.temperature < min_temp:
+                min_temp = data.temperature
+                min_temp_time = data.time[11:13]
+
+    return min_temp, min_temp_time
+
 # --- convert data from openweathermap API to useful formatted data ---
 
 def convert_kelvin_to_celsius(deg_kelvin):
@@ -269,5 +303,3 @@ def test_weather_forecast():
     print(get_current_weather_for_api())
     print(get_sunrise_time())
     print(get_sunset_time())
-
-get_current_weather()
