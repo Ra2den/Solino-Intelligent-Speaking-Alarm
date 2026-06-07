@@ -1,20 +1,21 @@
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 from typing import List, Optional
-from domain.alarms.schemas import Alarm, AlarmCreate
+from domain.alarms.schemas import Alarm, AlarmCreate, TranscriptionResponse, AIStateResponse
 from domain.alarms import service as alarms_service
-from domain.alarms.schemas import TranscriptionResponse 
 from domain.assistant.speech_to_text import STTService
 import asyncio
+from domain.assistant.state_manager import current_ai_status, active_status_connections, AIStateResponse
+from pydantic import BaseModel
 
 router = APIRouter(prefix="/alarms", tags=["Alarms"])
+
+
+# --- Standard Alarm Endpoints ---
 
 @router.get("/", response_model=List[Alarm])
 def get_alarms():
     """
         Retrieves all alarms.
-
-        :return: A list of all alarms
-        :rtype: List[Alarm]
     """
     return alarms_service.get_all_alarms()
 
@@ -22,9 +23,6 @@ def get_alarms():
 def get_active_alarms():
     """
         Retrieves all active alarms.
-
-        :return: A list of active alarms
-        :rtype: List[Alarm]
     """
     return alarms_service.get_active_alarms()
 
@@ -32,11 +30,6 @@ def get_active_alarms():
 def get_alarm(alarm_id: int):
     """
         Retrieves an alarm by its ID.
-
-        :param alarm_id: The ID of the alarm
-        :type alarm_id: int
-        :return: The matching alarm or None if it does not exist
-        :rtype: Optional[Alarm]
     """
     return alarms_service.get_alarm_by_id(alarm_id)
 
@@ -44,11 +37,6 @@ def get_alarm(alarm_id: int):
 def toggle_alarm(alarm_id: int):
     """
         Toggles the active status of an alarm.
-
-        :param alarm_id: The ID of the alarm
-        :type alarm_id: int
-        :return: The updated alarm or None if it does not exist
-        :rtype: Optional[Alarm]
     """
     return alarms_service.toggle_alarm(alarm_id)
 
@@ -56,11 +44,6 @@ def toggle_alarm(alarm_id: int):
 def create_alarm(alarm: AlarmCreate):
     """
         Creates a new alarm.
-
-        :param alarm: The alarm data used to create the new alarm
-        :type alarm: AlarmCreate
-        :return: The created alarm
-        :rtype: Alarm
     """
     return alarms_service.add_alarm(alarm.time, alarm.label, alarm.recurring_days)
 
@@ -68,13 +51,6 @@ def create_alarm(alarm: AlarmCreate):
 def update_alarm(alarm_id: int, alarm: Alarm):
     """
         Updates an existing alarm.
-
-        :param alarm_id: The ID of the alarm to update
-        :type alarm_id: int
-        :param alarm: The updated alarm data
-        :type alarm: Alarm
-        :return: The updated alarm or None if it does not exist
-        :rtype: Optional[Alarm]
     """
     return alarms_service.update_alarm(
         alarm_id=alarm_id,
@@ -88,14 +64,11 @@ def update_alarm(alarm_id: int, alarm: Alarm):
 def delete_alarm(alarm_id: int):
     """
         Deletes an alarm by its ID.
-
-        :param alarm_id: The ID of the alarm to delete
-        :type alarm_id: int
-        :return: The deleted alarm or None if it does not exist
-        :rtype: Optional[Alarm]
     """
     return alarms_service.delete_alarm_by_id(alarm_id)
 
+
+# --- WebSocket für die Audio-Namensaufnahme ---
 
 is_recording_globally = False
 
@@ -191,3 +164,39 @@ async def websocket_record_name(websocket: WebSocket):
         if recording_task is not None and not recording_task.done():
             await recording_task
         is_recording_globally = False
+
+
+@router.websocket("/ws/ai-state")
+async def websocket_ai_state(websocket: WebSocket):
+    """
+    WebSocket endpoint für den globalen Live-KI-Zustand.
+    """
+    await websocket.accept()
+    
+    active_status_connections.append(websocket)
+    print(f"[WEBSOCKET] Neuer Client verbunden. Gesamt: {len(active_status_connections)}")
+    
+    initial_response = AIStateResponse(state=current_ai_status["state"])
+    await websocket.send_text(initial_response.model_dump_json())
+    
+    try:
+        while True:
+            await websocket.receive_text()
+    except WebSocketDisconnect:
+        print("❌ [WEBSOCKET] Client hat die Verbindung getrennt.")
+    finally:
+        if websocket in active_status_connections:
+            active_status_connections.remove(websocket)
+
+class StateTrigger(BaseModel):
+    state: str
+
+@router.post("/set-ai-state-external")
+def set_ai_state_external(data: StateTrigger):
+    """
+    Erlaubt es externen Prozessen (wie dem CLI-Skript), 
+    den Zustand der WebSockets zu ändern.
+    """
+    from domain.assistant.state_manager import update_ai_state
+    update_ai_state(data.state)
+    return {"status": "success", "state_set": data.state}

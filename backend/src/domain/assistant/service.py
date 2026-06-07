@@ -14,7 +14,9 @@ import subprocess
 from pathlib import Path
 import shutil
 
+from domain.assistant.utils import trigger_backend_state
 import domain.alarms.service as alarm_service
+from domain.assistant.state_manager import update_ai_state
 from domain.assistant.speech_to_text import STTService
 from domain.weather.service import (
     get_current_weather,
@@ -301,7 +303,6 @@ def wake_up(time, alarm_label=""):
     return
 
 def interact():
-
     # --- SCHRITT 1: Aufnahme ---
     audio_file = stt_service.record_audio(duration=6)
             
@@ -312,21 +313,22 @@ def interact():
     # --- SCHRITT 3: Verarbeitung ---
     if user_text.strip():
         inputs = {"messages": [HumanMessage(content=user_text)]}
-        final_response = ""
-                
-        print("Susonne überlegt...")
-
         config = {"configurable": {"thread_id": "User"}}
 
+        # Das HTTP-Update wird jetzt autonom von ai_output geregelt
         ai_output(inputs=inputs, config=config)
-                
-        
     else:
         print("Ich habe nichts gehört. Bitte versuch es nochmal.")
 
-def ai_output(inputs, config):
 
-    for output in app.stream(inputs, config=config, stream_mode="values"):
+def ai_output(inputs, config):
+    # 1. Per HTTP an FastAPI: Susonne überlegt!
+    print("Zustand geändert: thinking")
+    trigger_backend_state("thinking")
+
+    final_response = ""
+    try:
+        for output in app.stream(inputs, config=config, stream_mode="values"):
             if "messages" in output and output["messages"]:
                 last_msg = output["messages"][-1]
                         
@@ -334,14 +336,22 @@ def ai_output(inputs, config):
                 final_response = last_msg.content
 
         # --- SCHRITT 4: Antwort ausgeben & Sprechen ---
-    if final_response:
-        print(f"Susonne: {final_response}")
-        speak(final_response)
-    else:
-        print("Keine Antwort von Susonne erhalten.")
-    
-    return
-    
+        if final_response:
+            print(f"Susonne: {final_response}")
+            
+            print("Zustand geändert: speaking")
+            trigger_backend_state("speaking")
+            
+            speak(final_response)
+        else:
+            print("Keine Antwort von Susonne erhalten.")
+
+    except Exception as e:
+        print(f"Fehler bei der KI-Verarbeitung: {e}")
+
+    finally:
+        print("Zustand geändert: idle")
+        trigger_backend_state("idle")    
 if __name__ == '__main__':
    pass
    #wake_up("8:20","Uni")

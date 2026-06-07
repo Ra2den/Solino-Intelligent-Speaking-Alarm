@@ -42,3 +42,11 @@ class TranscriptionResponse(BaseModel):
     transcription: Optional[str] = None
     isListening: bool
     error: Optional[str] = None
+
+class AIState(str, Enum):
+    IDLE = "idle"
+    THINKING = "thinking"
+    SPEAKING = "speaking"
+
+class AIStateResponse(BaseModel):
+    state: AIState
