@@ -38,6 +38,11 @@ class AlarmSession(BaseModel):
     ring_count: int = 0
     message: str | None = None
 
+class TranscriptionResponse(BaseModel):
+    transcription: Optional[str] = None
+    isListening: bool
+    error: Optional[str] = None
+
 class AlarmSessionWsType(str, Enum):
     INITIAL_STATE = "INITIAL_STATE"
     UPDATE = "UPDATE"
