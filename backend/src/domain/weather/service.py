@@ -7,7 +7,7 @@ import os
 from datetime import datetime, timezone
 from dotenv import load_dotenv
 from geopy.geocoders import Photon
-from domain.weather.schemas import WeatherForecast, WeatherNowcast, Sunrise, Sunset, LocaleWeatherConditions
+from domain.weather.schemas import WeatherForecast, WeatherNowcast, Sunrise, Sunset
 load_dotenv()
 
 API_KEY = os.getenv("API_KEY")
@@ -20,20 +20,21 @@ WIND_DIRECTIONS = ['Norden', 'Nord-Nord-Ost', 'Nord-Ost', 'Ost-Nord-Ost',
                    'Westen', 'West-Nord-West', 'Nord-West', 'Nord-Nord-West']
 
 API_WEATHER_CONDITIONS_ENUM = {
-    "Thunderstorm": LocaleWeatherConditions.Thunderstorm.value,
-    "Drizzle": LocaleWeatherConditions.Drizzle.value,
-    "Rain": LocaleWeatherConditions.Rain.value,
-    "Clear": LocaleWeatherConditions.Clear.value,
-    "Clouds": LocaleWeatherConditions.Clouds.value,
-    "thunderstorm": LocaleWeatherConditions.Thunderstorm.value,
-    "shower rain": LocaleWeatherConditions.Drizzle.value,
-    "rain": LocaleWeatherConditions.Rain.value,
-    "clear sky": LocaleWeatherConditions.Clear.value,
-    "few clouds": LocaleWeatherConditions.Clouds.value,
-    "scattered clouds": LocaleWeatherConditions.ScatteredClouds.value,
-    "broken clouds": LocaleWeatherConditions.BrokenClouds.value,
-    "snow": LocaleWeatherConditions.Snow.value,
-    "mist": LocaleWeatherConditions.Mist.value,
+    "Thunderstorm": "Gewitter",
+    "Drizzle": "Nieselregen",
+    "Rain": "Regen",
+    "Clear": "klarerem Himmel",
+    "Clouds": "bewölktem Himmel",
+    "thunderstorm": "Gewitter",
+    "shower rain": "Nieselregen",
+    "rain": "Regen",
+    "clear sky": "klarerem Himmel",
+    "few clouds": "bewölktem Himmel",
+    "scattered clouds": "vereinzelten Wolken",
+    "overcast clouds": "Wolken",
+    "broken clouds": "aufgelockerten Wolken",
+    "snow": "Schneefall",
+    "mist": "Nebel",
 }
 
 # --- Constants for json fetching ---
@@ -132,11 +133,12 @@ def fetch_and_parse_weather_nowcast(cords):
     min_temp_during_day, min_temp_time = get_min_temp_from_forecast(forecast_lookup)
 
     weather_nowcaset_string = (
-        f"Das Wetter in {data[CITY_NAME]} ist aktuell bei {format_decimal_to_locale(curr_temp)} °C "
-        f"Bei gefühlten {format_decimal_to_locale(fells_like)} °C. "
+        f"Das Wetter in {data[CITY_NAME]} ist aktuell bei {format_decimal_to_locale(curr_temp)} ° Celsius "
+        f"Bei gefühlten {format_decimal_to_locale(fells_like)} ° Celsius. "
         f"Bei hauptsächlich {get_locale_weather_conditions(weather_cond_main)} und {get_locale_weather_conditions(weather_cond_description)}. "
         f"Mit Windgeschwindigkeiten von {format_decimal_to_locale(wind_speed)} km/h, aus {wind_direction} kommend. "
-        f"Gegen {max_temp_time} Uhr wird die Temperatur auf {format_decimal_to_locale(max_temp_during_day)} °C ansteigen und gegen {min_temp_time} Uhr auf {format_decimal_to_locale(min_temp_during_day)} °C fallen."
+        f"Gegen {max_temp_time} Uhr wird die Temperatur auf {format_decimal_to_locale(max_temp_during_day)} ° Celsius ansteigen "
+        f"und gegen {min_temp_time} Uhr auf {format_decimal_to_locale(min_temp_during_day)} ° Celsius fallen."
     )
 
     print(weather_nowcaset_string)
@@ -252,23 +254,23 @@ def get_sunset_time():
 
 def get_max_temp_from_forecast(forecast):
     max_temp = forecast[0].temperature
-    max_temp_time = forecast[0].time[11:13]
+    max_temp_time = int(forecast[0].time[11:13])
 
     for data in forecast:
         if data.temperature > max_temp:
             max_temp = data.temperature
-            max_temp_time = data.time[11:13]
+            max_temp_time = int(data.time[11:13])
 
     return max_temp, max_temp_time
 
 def get_min_temp_from_forecast(forecast):
     min_temp = forecast[0].temperature
-    min_temp_time = forecast[0].time[11:13]
+    min_temp_time = int(forecast[0].time[11:13])
 
     for data in forecast:
-            if data.temperature < min_temp:
-                min_temp = data.temperature
-                min_temp_time = data.time[11:13]
+        if data.temperature < min_temp:
+            min_temp = data.temperature
+            min_temp_time = int(data.time[11:13])
 
     return min_temp, min_temp_time
 
@@ -292,7 +294,12 @@ def round_half_up(n):
 
 def format_decimal_to_locale(number, to_locale="de_DE.utf8"):
     locale.setlocale(locale.LC_NUMERIC, to_locale)
-    formatted_number = locale.format_string("%.1f", number, grouping=True)
+
+    if number == int(number):
+        formatted_number = locale.format_string("%d", int(number), grouping=True)
+    else:
+        formatted_number = locale.format_string("%.1f", number, grouping=True)
+
     return formatted_number
 
 def get_locale_weather_conditions(api_condition):
