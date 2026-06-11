@@ -10,7 +10,7 @@ import { useEffect, useRef, useState } from "react";
 import { SettingsRow } from "./SettingsRow";
 import { WeekdayChips } from "./WeekdayChips";
 import { ActionPill } from "./ActionPill";
-import { Timepicker } from "timepicker-ui-react";
+import { NumPad } from "./NumPad";
 import { alarmsService } from "../../services/alarms.service";
 import AlarmNameRecorder from "../../services/alarm-name-recorder";
 import micIcon from "../../assets/alarm-create/mic.svg";
@@ -78,35 +78,30 @@ export function AlarmCreate({ alarm, onCreate }: AlarmCreateProps) {
           <Controller
             control={control}
             name="time"
-            render={({ field }) => (
-              <div className="flex flex-col items-center justify-center gap-5">
-                {/* Uhrzeit */}
-                <div className="text-[75px] leading-none font-medium tracking-[-0.04em] max-md:text-[60px]">
-                  {field.value ?? "00:00"}
-                </div>
-                <div className="relative">
-                  <Timepicker
-                    placeholder="Bearbeiten"
-                    className={`rounded-full bg-white px-3.75 py-2.5 text-[20px] font-medium text-transparent caret-transparent transition-all duration-200 text-center placeholder:text-transparent`}
-                    name="time"
-                    value={field.value}
-                    required
-                    onUpdate={(data) =>
-                      field.onChange(`${data.hour}:${data.minutes}`)
-                    }
-                    options={{
-                      clock: { type: "24h" },
-                      ui: {
-                        enableSwitchIcon: false,
-                      },
+            render={({ field }) => {
+              const digits = (field.value ?? "00:00").replace(/\D/g, "").slice(0, 4);
+              const displayTime =
+                digits.length === 4
+                  ? `${digits.slice(0, 2)}:${digits.slice(2, 4)}`
+                  : "HH:MM";
+
+              return (
+                <div className="flex flex-col items-center justify-center gap-5">
+                  {/* Uhrzeit */}
+                  <div className="text-[75px] leading-none font-medium tracking-[-0.04em] max-md:text-[60px]">
+                    {displayTime}
+                  </div>
+                  <NumPad
+                    value={digits}
+                    onChange={(nextDigits) => {
+                      field.onChange(formatDigitsToTime(nextDigits));
                     }}
+                    onClear={() => field.onChange("00:00")}
+                    onConfirm={() => undefined}
                   />
-                  <span className="pointer-events-none absolute inset-0 flex items-center justify-center text-[20px] font-medium text-black">
-                    Bearbeiten
-                  </span>
                 </div>
-              </div>
-            )}
+              );
+            }}
           />
           <div className="flex flex-col gap-3">
             {/* Weekday */}
@@ -201,6 +196,14 @@ export function AlarmCreate({ alarm, onCreate }: AlarmCreateProps) {
       recorderRef.current.startRecording();
     }
   }
+
+  const formatTimeToDigits = (time?: string) =>
+    (time ?? "00:00").replace(/\D/g, "").slice(0, 4).padStart(4, "0");
+
+  const formatDigitsToTime = (digits: string) => {
+    const cleaned = digits.replace(/\D/g, "").slice(0, 4).padEnd(4, "0");
+    return `${cleaned.slice(0, 2)}:${cleaned.slice(2, 4)}`;
+  };
 
   async function onSubmit(data: Inputs): Promise<void> {
     if (typeof alarm?.id === "number") {
