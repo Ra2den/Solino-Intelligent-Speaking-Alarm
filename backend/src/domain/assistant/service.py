@@ -13,6 +13,9 @@ import json
 import subprocess
 from pathlib import Path
 import shutil
+from omnivoice import OmniVoice
+import soundfile as sf
+import torch
 
 from domain.assistant.utils import trigger_backend_state
 import domain.alarms.service as alarm_service
@@ -37,6 +40,9 @@ SETTINGS_PATH = BACKEND_ROOT / "settings.json"
 RESPONSE_WAV_PATH = AUDIO_DIR / "response.wav"
 
 AUDIO_DIR.mkdir(parents=True, exist_ok=True)
+
+filename = "user_input.wav" #set voice cloning file name here, put given file in /backend/assets/audio
+INPUT_AUDIO_PATH = AUDIO_DIR / filename
 
 with SETTINGS_PATH.open("r") as file:
     settings = json.load(file)
@@ -201,6 +207,13 @@ model = ChatOllama(
     temperature=0,
 ).bind_tools(tools)
 
+print("Lade OmniVoice Modell...")
+tts_model = OmniVoice.from_pretrained(
+    "k2-fsa/OmniVoice",
+    device_map="mps",  #mps only for silicon mac, cpu for cpu / "cuda:0" for gpu 
+    dtype=torch.float16   
+)
+
 class AgentState(TypedDict):
     messages: Annotated[list[BaseMessage], operator.add]
 
@@ -237,26 +250,41 @@ app = workflow.compile(checkpointer=memory)
 
 config = {"configurable": {"thread_id": "haupt_user_session"}}
 
-def speak(text):
+def speak(text, input_text):
+
     #print(f"Generiere Audio für: {text}...")
     # 'aplay' ist der Standard-Player auf Linux (pw-play funktioniert aber besser), 'afplay' auf Mac
-    if speaker == "male":
-        model_path = MODELS_DIR / "de_DE-thorsten-high.onnx"
-    else:
-        model_path = MODELS_DIR / "de_DE-kerstin-low.onnx"
+    # if speaker == "male":
+    #     model_path = MODELS_DIR / "de_DE-thorsten-high.onnx"
+    # else:
+    #     model_path = MODELS_DIR / "de_DE-kerstin-low.onnx"
 
-    subprocess.run(
-        [
-            "piper",
-            "--model",
-            str(model_path),
-            "--output_file",
-            str(RESPONSE_WAV_PATH),
-        ],
-        input=text,
-        text=True,
-        check=True,
+    # subprocess.run(
+    #     [
+    #         "piper",
+    #         "--model",
+    #         str(model_path),
+    #         "--output_file",
+    #         str(RESPONSE_WAV_PATH),
+    #     ],
+    #     input=text,
+    #     text=True,
+    #     check=True,
+    # )
+
+    ref_waveform, ref_sr = sf.read(INPUT_AUDIO_PATH)
+
+    print("Generiere Audio (Voice Clone)...")
+    audio = tts_model.generate(
+        text=text,
+        ref_audio=(ref_waveform, ref_sr),
+        ref_text=input_text, 
     )
+
+    sf.write(RESPONSE_WAV_PATH, audio[0], 24000)
+
+    print(f"Fertig! Audio wurde erfolgreich als '{RESPONSE_WAV_PATH}' gespeichert!")
+
     _play_audio_file(RESPONSE_WAV_PATH)
 
 
@@ -317,12 +345,15 @@ def interact():
         config = {"configurable": {"thread_id": "User"}}
 
         # Das HTTP-Update wird jetzt autonom von ai_output geregelt
-        ai_output(inputs=inputs, config=config)
+        ai_output(inputs=inputs, config=config, input_text=user_text)
     else:
         print("Ich habe nichts gehört. Bitte versuch es nochmal.")
 
 
-def ai_output(inputs, config):
+def ai_output(inputs, config, input_text):
+
+    print(f"INPUTS ??? : {inputs}")
+
     # 1. Per HTTP an FastAPI: Susonne überlegt!
     print("Zustand geändert: thinking")
     trigger_backend_state(AIState.THINKING)
@@ -343,7 +374,7 @@ def ai_output(inputs, config):
             print("Zustand geändert: speaking")
             trigger_backend_state(AIState.SPEAKING)
             
-            speak(final_response)
+            speak(final_response,  input_text=input_text)
         else:
             print("Keine Antwort von Susonne erhalten.")
 
