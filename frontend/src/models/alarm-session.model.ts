@@ -13,7 +13,8 @@ export const AlarmSessionSchema = z.object({
   started_at: z.string(),
   snoozed_until: z.string().nullable(),
   label: z.string().nullable(),
-  ring_count: z.number()
+  ring_count: z.number(),
+  message: z.string().nullable().optional(),
 });
 
 export type AlarmSession = z.infer<typeof AlarmSessionSchema>;

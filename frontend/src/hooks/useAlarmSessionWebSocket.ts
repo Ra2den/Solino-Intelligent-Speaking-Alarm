@@ -47,7 +47,6 @@ export function useAlarmSessionWebSocket() {
       };
 
       ws.onmessage = (event) => {
-        console.log("WebSocket message received", event.data);
         let data: AlarmSessionWsMessage;
 
         try {

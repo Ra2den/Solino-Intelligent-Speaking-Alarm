@@ -20,7 +20,10 @@ class ConnectionManager:
         self.active_connections.discard(websocket)
 
     async def broadcast(self, message: Any):
-        payload = message.model_dump() if isinstance(message, BaseModel) else message
+        if isinstance(message, BaseModel):
+            payload = message.model_dump(mode='json')
+        else:
+            payload = message
         stale_connections = []
 
         for connection in list(self.active_connections):
