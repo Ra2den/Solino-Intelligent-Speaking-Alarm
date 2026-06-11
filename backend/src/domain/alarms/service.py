@@ -1,11 +1,12 @@
 import logging
 import time
 from datetime import datetime, timedelta
+from api.websocket_manager import manager
 
 import db.alarm_sessions_repo as alarm_sessions_repo
 import db.alarms_repo as alarms_repo
 from domain.alarms.player import alarm_player
-from domain.alarms.schemas import AlarmSession, AlarmSessionStatus, Weekday
+from domain.alarms.schemas import AlarmSession, AlarmSessionStatus, Weekday, AlarmSessionWsMessage, AlarmSessionWsType
 from domain.alarms.helper.alarm_helper import validate_weekdays
 
 logger = logging.getLogger(__name__)
@@ -147,7 +148,7 @@ def _resume_snoozed_session_if_due(current_datetime):
     if datetime.fromisoformat(snoozed_until) > current_datetime:
         return False
 
-    alarm_sessions_repo.update_alarm_session(
+    updated_session = alarm_sessions_repo.update_alarm_session(
         current_session["id"],
         status=AlarmSessionStatus.RINGING,
         ring_count=current_session["ring_count"] + 1,
@@ -155,6 +156,7 @@ def _resume_snoozed_session_if_due(current_datetime):
     )
     alarm_player.start_loop(session_id=current_session["id"])
     logger.info("Snoozed alarm session %s resumed", current_session["id"])
+    _broadcast_alarm_state(updated_session)
     return True
 
 def monitor_alarms(
@@ -185,6 +187,16 @@ def monitor_alarms(
 
         time.sleep(poll_interval)
 
+def _broadcast_alarm_state(session, message_type=AlarmSessionWsType.UPDATE):
+    """Broadcast alarm session state to all connected WebSocket clients."""
+
+    message: AlarmSessionWsMessage = AlarmSessionWsMessage(
+        type=message_type,
+        session=session,
+    )
+
+    manager.broadcast_threadsafe(message)
+
 def start_ringing_sesssion(alarm):
     existing_session = alarm_sessions_repo.get_unresolved_alarm_session_by_alarm_id(alarm["id"])
     if existing_session and existing_session.get("status") in (
@@ -201,15 +213,22 @@ def start_ringing_sesssion(alarm):
         label=alarm["label"],
     )
     alarm_player.start_loop(session_id=current_session["id"])
-    
+    _broadcast_alarm_state(current_session)
+
 def stop_ringing_session(session_id: int, status=AlarmSessionStatus.DISMISSED):
-    if alarm_player.current_session_id() != session_id:
+    existing_session = alarm_sessions_repo.get_alarm_session_by_id(session_id)
+    if not existing_session:
+        return None
+
+    current_audio_session_id = alarm_player.current_session_id()
+    should_stop_audio = current_audio_session_id in (None, session_id)
+
+    if not should_stop_audio:
         logger.warning(
-            "Ignoring stop request for stale session %s; current ringing session is %s",
+            "Resolving session %s without stopping audio for current session %s",
             session_id,
-            alarm_player.current_session_id(),
+            current_audio_session_id,
         )
-        return alarm_sessions_repo.get_alarm_session_by_id(session_id)
 
     snoozed_until_time = (datetime.now() + timedelta(minutes=5)).isoformat() if status == AlarmSessionStatus.SNOOZED else None
     if (snoozed_until_time != None):
@@ -219,15 +238,31 @@ def stop_ringing_session(session_id: int, status=AlarmSessionStatus.DISMISSED):
         status=status,
         snoozed_until=snoozed_until_time,
         clear_snoozed_until=status != AlarmSessionStatus.SNOOZED,
-    )      
-    alarm_player.stop()
-    
+    )
+
+    if should_stop_audio:
+        alarm_player.stop()
+
+    _broadcast_alarm_state(session)
+
     if status == AlarmSessionStatus.DISMISSED and session:
         alarm = alarms_repo.get_alarm_by_id(session["alarm_id"])
         if alarm:
-            from domain.assistant.service import wake_up
+            from domain.assistant.service import wake_up, is_ollama_available
 
-            wake_up(alarm["time"], session.get("label") or alarm.get("label", ""))
+            if is_ollama_available():
+                try:
+                    wake_up(alarm["time"], session.get("label") or alarm.get("label", ""))
+                except Exception:
+                    logger.exception(
+                        "Wake-up assistant failed for dismissed session %s",
+                        session_id,
+                    )
+            else:
+                logger.warning(
+                    "Ollama service is not available. Skipping wake-up assistant for dismissed session %s",
+                    session_id,
+                )
         else:
             logger.warning(
                 "Could not find alarm %s for dismissed session %s",

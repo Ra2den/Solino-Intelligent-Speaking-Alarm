@@ -70,17 +70,38 @@ def delete_alarm_by_id(alarm_id):
 
 
 def toggle_alarm(alarm_id):
+    alarm = get_alarm_by_id(alarm_id)
+    if not alarm:
+        return None
+
+    next_active = not alarm["active"]
+    fields = ["active = ?"]
+    params = [1 if next_active else 0]
+
+    if next_active:
+        fields.append("last_triggered_at = ?")
+        params.append(None)
+
+    params.append(alarm_id)
     db.execute(
-        "UPDATE alarms SET active = NOT active WHERE id = ?",
-        (alarm_id,),
+        f"UPDATE alarms SET {', '.join(fields)} WHERE id = ?",
+        tuple(params),
     )
     return get_alarm_by_id(alarm_id)
 
 
 def set_alarm_active(alarm_id, active):
+    fields = ["active = ?"]
+    params = [1 if active else 0]
+
+    if active:
+        fields.append("last_triggered_at = ?")
+        params.append(None)
+
+    params.append(alarm_id)
     db.execute(
-        "UPDATE alarms SET active = ? WHERE id = ?",
-        (1 if active else 0, alarm_id),
+        f"UPDATE alarms SET {', '.join(fields)} WHERE id = ?",
+        tuple(params),
     )
     return get_alarm_by_id(alarm_id)
 
@@ -111,12 +132,18 @@ def delete_alarm_by_time(time_value):
 
 
 def update_alarm(alarm_id, time=None, label=None, recurring_days=None, active=None):
+    existing_alarm = get_alarm_by_id(alarm_id)
+    if not existing_alarm:
+        return None
+
     fields = []
     params = []
+    should_clear_last_triggered_at = False
 
     if time is not None:
         fields.append("time = ?")
         params.append(time)
+        should_clear_last_triggered_at = time != existing_alarm["time"]
 
     if label is not None:
         fields.append("label = ?")
@@ -127,7 +154,14 @@ def update_alarm(alarm_id, time=None, label=None, recurring_days=None, active=No
 
     if active is not None:
         fields.append("active = ?")
-        params.append(active)
+        params.append(1 if active else 0)
+        should_clear_last_triggered_at = should_clear_last_triggered_at or (
+            active and not existing_alarm["active"]
+        )
+
+    if should_clear_last_triggered_at:
+        fields.append("last_triggered_at = ?")
+        params.append(None)
 
     if not fields:
         return None

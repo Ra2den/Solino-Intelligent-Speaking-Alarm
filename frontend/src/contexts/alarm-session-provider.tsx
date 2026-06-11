@@ -1,5 +1,5 @@
 import { type ReactNode, useMemo } from "react";
-import { useCurrentAlarmSession } from "../hooks/useCurrentAlarmSession";
+import { useAlarmSessionWebSocket } from "../hooks/useAlarmSessionWebSocket";
 import { alarmSessionService } from "../services/alarm-session.service";
 import { AlarmSessionContext } from "./alarm-session.context";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -14,14 +14,15 @@ export function AlarmSessionProvider({
   client,
 }: AlarmSessionProviderProps) {
   const queryClient = client;
-  const { data, isLoading } = useCurrentAlarmSession();
+  const { data, setData, isLoading } = useAlarmSessionWebSocket();
 
   const stopMutation = useMutation({
     mutationFn: async () => {
       if (!data) return null;
       return alarmSessionService.stopSession(data.id);
     },
-    onSuccess: () => {
+    onSuccess: (updatedSession) => {
+      setData(updatedSession);
       void queryClient.invalidateQueries({
         queryKey: ["alarm-session", "current"],
       });
@@ -33,7 +34,8 @@ export function AlarmSessionProvider({
       if (!data) return null;
       return alarmSessionService.snoozeSession(data.id);
     },
-    onSuccess: () => {
+    onSuccess: (updatedSession) => {
+      setData(updatedSession);
       void queryClient.invalidateQueries({
         queryKey: ["alarm-session", "current"],
       });
