@@ -11,4 +11,4 @@ def trigger_backend_state(state: str):
             timeout=0.5
         )
     except Exception as e:
-        print(f"⚠️ Konnte State '{state}' nicht an FastAPI übertragen: {e}")
+        print(f"Konnte State '{state}' nicht an FastAPI übertragen: {e}")
