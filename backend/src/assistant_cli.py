@@ -24,7 +24,7 @@ def trigger_backend_state(state: str):
             timeout=0.5 
         )
     except Exception as e:
-        print(f"⚠️ [CLI] Konnte State '{state}' nicht an FastAPI übertragen (Server offline?)")
+        print(f"[CLI] Konnte State '{state}' nicht an FastAPI übertragen (Server offline?)")
 
 def main():
     print("= " * 15)
