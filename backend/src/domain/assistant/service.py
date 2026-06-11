@@ -263,9 +263,9 @@ def speak(text):
 
 
 def _play_audio_file(audio_path):
-    player = shutil.which("afplay") or shutil.which("aplay")
+    player = shutil.which("afplay") or shutil.which("pw-play") or shutil.which("aplay")
     if not player:
-        raise RuntimeError("Kein Audio-Player gefunden. Erwartet wurde 'afplay' oder 'aplay'.")
+        raise RuntimeError("Kein Audio-Player gefunden. Erwartet wurde 'afplay', 'pw-play' oder 'apaly'.")
 
     completed = subprocess.run(
         [player, str(audio_path)],

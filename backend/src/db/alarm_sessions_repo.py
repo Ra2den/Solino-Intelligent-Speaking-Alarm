@@ -1,6 +1,7 @@
 from .connection import db
 from .mappers import serialize_alarm_session_row, serialize_alarm_session_rows
 from domain.alarms.schemas import AlarmSessionStatus
+from datetime import datetime
 
 def create_alarm_sessions_table():
     db.execute(
@@ -20,8 +21,8 @@ def create_alarm_sessions_table():
 def create_alarm_session(
     alarm_id: int,
     status: AlarmSessionStatus,
-    started_at: str,
-    snoozed_until: str=None,
+    started_at: datetime,
+    snoozed_until: datetime=None,
     label: str=None,
     ring_count: int=0,
 ):
@@ -98,7 +99,7 @@ def get_latest_snoozed_alarm_session():
 def update_alarm_session(
     session_id: int,
     status: AlarmSessionStatus=None,
-    snoozed_until: str=None,
+    snoozed_until: datetime=None,
     label: str=None,
     ring_count: int=None,
     clear_snoozed_until=False,
