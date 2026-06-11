@@ -16,6 +16,7 @@ import shutil
 
 from domain.assistant.utils import trigger_backend_state
 import domain.alarms.service as alarm_service
+from domain.alarms.schemas import AIState
 from domain.assistant.state_manager import update_ai_state
 from domain.assistant.speech_to_text import STTService
 from domain.weather.service import (
@@ -324,7 +325,7 @@ def interact():
 def ai_output(inputs, config):
     # 1. Per HTTP an FastAPI: Susonne überlegt!
     print("Zustand geändert: thinking")
-    trigger_backend_state("thinking")
+    trigger_backend_state(AIState.THINKING)
 
     final_response = ""
     try:
@@ -340,7 +341,7 @@ def ai_output(inputs, config):
             print(f"Susonne: {final_response}")
             
             print("Zustand geändert: speaking")
-            trigger_backend_state("speaking")
+            trigger_backend_state(AIState.SPEAKING)
             
             speak(final_response)
         else:
@@ -351,7 +352,7 @@ def ai_output(inputs, config):
 
     finally:
         print("Zustand geändert: idle")
-        trigger_backend_state("idle")    
+        trigger_backend_state(AIState.IDLE)    
 if __name__ == '__main__':
    pass
    #wake_up("8:20","Uni")

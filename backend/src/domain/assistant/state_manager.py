@@ -13,7 +13,7 @@ class AIStateResponse(BaseModel):
 
 current_ai_status = {"state": AIState.IDLE}
 active_status_connections: List[any] = [] 
-def update_ai_state(new_state: str):
+def update_ai_state(new_state: AIState):
     """
     Ändert den globalen Status der KI und pusht ihn an alle 
     offenen WebSockets für das Frontend.
