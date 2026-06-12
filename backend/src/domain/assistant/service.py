@@ -27,6 +27,8 @@ from domain.news.service import (
     get_full_news_from_headline_id, 
     search_news
 )
+from domain.settings import service as settings_service
+from domain.settings.schemas import VoiceOption
 
 logger = logging.getLogger(__name__)
 OLLAMA_BASE_URL = "http://localhost:11434"
@@ -240,11 +242,12 @@ app = workflow.compile(checkpointer=memory)
 config = {"configurable": {"thread_id": "haupt_user_session"}}
 
 def speak(text):
+    voice_setting = settings_service.get_voice()
     #print(f"Generiere Audio für: {text}...")
     # 'aplay' ist der Standard-Player auf Linux (pw-play funktioniert aber besser), 'afplay' auf Mac
-    if speaker == "male":
+    if voice_setting == VoiceOption.MALE:
         model_path = MODELS_DIR / "de_DE-thorsten-high.onnx"
-    else:
+    elif voice_setting == VoiceOption.FEMALE:
         model_path = MODELS_DIR / "de_DE-kerstin-low.onnx"
 
     subprocess.run(
@@ -283,9 +286,10 @@ def _play_audio_file(audio_path):
 def is_ollama_available():
     """Check if Ollama service is available and accessible."""
     try:
+        timeout_sec = settings_service.get_ollama_health_check_timeout_sec()
         response = requests.get(
             f"{OLLAMA_BASE_URL}/api/tags",
-            timeout=2
+            timeout=timeout_sec
         )
         return response.status_code == 200
     except (requests.ConnectionError, requests.Timeout, Exception):

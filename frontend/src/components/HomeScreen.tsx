@@ -10,12 +10,15 @@ import settingsIcon from "/src/assets/alarm/icon-settingsBtn.svg";
 import { AlarmList } from "./alarm/AlarmList";
 import { useAlarmSession } from "../contexts/alarm-session.context";
 import { AlarmRingingScreen } from "./AlarmRingingScreen";
+import SettingsScreen from "./SettingsScreen";
 
 export function HomeScreen() {
   const [isCreate, setIsCreate] = useState(false);
   const [isListView, setIsListView] = useState(false);
   const { isRinging, currentAlarmSession, stopAlarm, snoozeAlarm } =
     useAlarmSession();
+
+  const [isSettingsView, setIsSettingsView] = useState(false);
 
   if (isRinging && currentAlarmSession) {
     return (
@@ -32,6 +35,14 @@ export function HomeScreen() {
         <div className="col-span-3">
           <Agent />
         </div>
+      </div>
+    );
+  }
+
+  if (isSettingsView) {
+    return (
+      <div className="w-full h-full p-12">
+        <SettingsScreen onBack={() => setIsSettingsView(false)} />
       </div>
     );
   }
@@ -80,7 +91,11 @@ export function HomeScreen() {
             label="Wecker hinzufügen"
             iconSrc={alarmAddIcon}
           />
-          <Button label="Einstellungen" iconSrc={settingsIcon} />
+          <Button
+            onClick={() => setIsSettingsView(true)}
+            label="Einstellungen"
+            iconSrc={settingsIcon}
+          />
         </div>
         <div className="row-span-3">
           <AlarmWidget></AlarmWidget>

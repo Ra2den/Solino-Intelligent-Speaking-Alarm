@@ -1,7 +1,7 @@
 import logging
 import threading
 from contextlib import asynccontextmanager
-from api.routes import alarm_session, alarms, weather
+from api.routes import alarm_session, alarms, weather, settings
 from db import init_db
 
 from fastapi import FastAPI
@@ -69,3 +69,4 @@ app.add_middleware(
 app.include_router(alarms.router)
 app.include_router(alarm_session.router)
 app.include_router(weather.router)
+app.include_router(settings.router)
