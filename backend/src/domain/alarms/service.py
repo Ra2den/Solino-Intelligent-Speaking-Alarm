@@ -8,7 +8,6 @@ import db.alarms_repo as alarms_repo
 from domain.alarms.player import alarm_player
 from domain.alarms.schemas import AlarmSession, AlarmSessionStatus, Weekday, AlarmSessionWsMessage, AlarmSessionWsType
 from domain.alarms.helper.alarm_helper import validate_weekdays
-from domain.settings import service as settings_service
 
 logger = logging.getLogger(__name__)
 
@@ -230,10 +229,8 @@ def stop_ringing_session(session_id: int, status=AlarmSessionStatus.DISMISSED):
             session_id,
             current_audio_session_id,
         )
-        
-    snooze_duration = settings_service.get_snooze_duration_min()
 
-    snoozed_until_time = (datetime.now() + timedelta(minutes=snooze_duration)).isoformat() if status == AlarmSessionStatus.SNOOZED else None
+    snoozed_until_time = (datetime.now() + timedelta(minutes=5)).isoformat() if status == AlarmSessionStatus.SNOOZED else None
     if (snoozed_until_time != None):
         snoozed_until_time = datetime.fromisoformat(str(snoozed_until_time))
     session = alarm_sessions_repo.update_alarm_session(

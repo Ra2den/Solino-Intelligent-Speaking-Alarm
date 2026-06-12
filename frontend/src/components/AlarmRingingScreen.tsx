@@ -1,9 +1,6 @@
 import type { AlarmSession } from "../models/alarm-session.model";
 import alarmIcon from "/src/assets/alarm/icon-alarm.svg";
 import { formatDay, formatTime, toDate } from "../utils/time.util";
-import { useQuery } from "@tanstack/react-query";
-import { settingsService } from "../services/settings.service";
-import { SettingsKeySchema } from "../models/settings/settings.model";
 
 type AlarmRingingScreenProps = {
   session: AlarmSession;
@@ -16,11 +13,8 @@ export function AlarmRingingScreen({
   onStop,
   onSnooze,
 }: AlarmRingingScreenProps) {
-  const { data: snoozeDuration } = useQuery({
-    queryKey: ["setting", SettingsKeySchema.enum.SNOOZE_DURATION_MIN],
-    queryFn: () =>
-      settingsService.getSetting(SettingsKeySchema.enum.SNOOZE_DURATION_MIN),
-  });
+  // TODO SNOOZE_MINUTES aus Settings ableiten
+  const SNOOZE_MINUTES = 5;
 
   return (
     <div className="w-full h-full rounded-[50px] bg-black mix-blend-soft-light">
@@ -58,7 +52,7 @@ export function AlarmRingingScreen({
               className="flex items-center justify-center gap-2 h-20 rounded-full bg-white text-black text-[40px] font-medium transition-opacity duration-300 hover:opacity-80"
             >
               Snooze
-              <span className="text-[30px] text-center">+{snoozeDuration}</span>
+              <span className="text-[30px] text-center">+{SNOOZE_MINUTES}</span>
             </button>
             <button
               onClick={onStop}
