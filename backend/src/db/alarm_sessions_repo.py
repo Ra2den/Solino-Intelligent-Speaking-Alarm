@@ -12,27 +12,60 @@ def create_alarm_sessions_table():
             status TEXT NOT NULL,
             started_at TEXT NOT NULL,
             snoozed_until TEXT,
+            guard_expires_at TEXT,
+            guard_tolerance_until TEXT,
+            pressure_started_at TEXT,
             label TEXT,
             ring_count INTEGER DEFAULT 0,
             FOREIGN KEY (alarm_id) REFERENCES alarms (id)
         )
         """
     )
+    _ensure_alarm_sessions_columns()
+
+
+def _ensure_alarm_sessions_columns():
+    existing_columns = [
+        column["name"]
+        for column in db.fetch_all("PRAGMA table_info(alarm_sessions)")
+    ]
+
+    if "guard_expires_at" not in existing_columns:
+        db.execute("ALTER TABLE alarm_sessions ADD COLUMN guard_expires_at TEXT")
+
+    if "guard_tolerance_until" not in existing_columns:
+        db.execute("ALTER TABLE alarm_sessions ADD COLUMN guard_tolerance_until TEXT")
+
+    if "pressure_started_at" not in existing_columns:
+        db.execute("ALTER TABLE alarm_sessions ADD COLUMN pressure_started_at TEXT")
 def create_alarm_session(
     alarm_id: int,
     status: AlarmSessionStatus,
     started_at: datetime,
     snoozed_until: datetime=None,
+    guard_expires_at: datetime=None,
+    guard_tolerance_until: datetime=None,
+    pressure_started_at: datetime=None,
     label: str=None,
     ring_count: int=0,
 ):
     session_id: int = db.execute(
         """
         INSERT INTO alarm_sessions (
-            alarm_id, status, started_at, snoozed_until, label, ring_count
-        ) VALUES (?, ?, ?, ?, ?, ?)
+            alarm_id, status, started_at, snoozed_until, guard_expires_at, guard_tolerance_until, pressure_started_at, label, ring_count
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
         """,
-        (alarm_id, status, started_at, snoozed_until, label, ring_count),
+        (
+            alarm_id,
+            status,
+            started_at,
+            snoozed_until,
+            guard_expires_at,
+            guard_tolerance_until,
+            pressure_started_at,
+            label,
+            ring_count,
+        ),
     )
     return get_alarm_session_by_id(session_id)
 
@@ -47,11 +80,16 @@ def get_unresolved_alarm_session_by_alarm_id(alarm_id: int):
         db.fetch_one(
             """
             SELECT * FROM alarm_sessions
-            WHERE alarm_id = ? AND status IN (?, ?)
+            WHERE alarm_id = ? AND status IN (?, ?, ?)
             ORDER BY started_at DESC, id DESC
             LIMIT 1
             """,
-            (alarm_id, AlarmSessionStatus.RINGING, AlarmSessionStatus.SNOOZED),
+            (
+                alarm_id,
+                AlarmSessionStatus.RINGING,
+                AlarmSessionStatus.SNOOZED,
+                AlarmSessionStatus.GUARD,
+            ),
         )
     )
 
@@ -82,6 +120,19 @@ def get_active_alarm_session():
         )
     )
 
+def get_latest_guard_alarm_session():
+    return serialize_alarm_session_row(
+        db.fetch_one(
+            """
+            SELECT * FROM alarm_sessions
+            WHERE status = ?
+            ORDER BY guard_expires_at DESC, id DESC
+            LIMIT 1
+            """,
+            (AlarmSessionStatus.GUARD,),
+        )
+    )
+
 def get_latest_snoozed_alarm_session():
     return serialize_alarm_session_row(
         db.fetch_one(
@@ -100,9 +151,15 @@ def update_alarm_session(
     session_id: int,
     status: AlarmSessionStatus=None,
     snoozed_until: datetime=None,
+    guard_expires_at: datetime=None,
+    guard_tolerance_until: datetime=None,
+    pressure_started_at: datetime=None,
     label: str=None,
     ring_count: int=None,
     clear_snoozed_until=False,
+    clear_guard_expires_at=False,
+    clear_guard_tolerance_until=False,
+    clear_pressure_started_at=False,
 ):
     fields = []
     params = []
@@ -116,6 +173,27 @@ def update_alarm_session(
         params.append(snoozed_until)
     elif clear_snoozed_until:
         fields.append("snoozed_until = ?")
+        params.append(None)
+
+    if guard_expires_at is not None:
+        fields.append("guard_expires_at = ?")
+        params.append(guard_expires_at)
+    elif clear_guard_expires_at:
+        fields.append("guard_expires_at = ?")
+        params.append(None)
+
+    if guard_tolerance_until is not None:
+        fields.append("guard_tolerance_until = ?")
+        params.append(guard_tolerance_until)
+    elif clear_guard_tolerance_until:
+        fields.append("guard_tolerance_until = ?")
+        params.append(None)
+
+    if pressure_started_at is not None:
+        fields.append("pressure_started_at = ?")
+        params.append(pressure_started_at)
+    elif clear_pressure_started_at:
+        fields.append("pressure_started_at = ?")
         params.append(None)
 
     if label is not None:

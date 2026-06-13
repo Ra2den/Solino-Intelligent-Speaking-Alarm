@@ -1,5 +1,6 @@
 import logging
 import time
+import os
 from datetime import datetime, timedelta
 from api.websocket_manager import manager
 
@@ -10,6 +11,10 @@ from domain.alarms.schemas import AlarmSession, AlarmSessionStatus, Weekday, Ala
 from domain.alarms.helper.alarm_helper import validate_weekdays
 
 logger = logging.getLogger(__name__)
+
+# Configurable time windows for development (defaults to 30s guard expiry and 60s tolerance)
+GUARD_EXPIRES_SECONDS = int(os.getenv("GUARD_EXPIRES_SECONDS", 30))
+GUARD_TOLERANCE_SECONDS = int(os.getenv("GUARD_TOLERANCE_SECONDS", 10))
 
 WEEKDAY_MAP = {
     0: Weekday.MON,
@@ -81,7 +86,22 @@ def delete_alarm_by_time(time_value):
 
 def get_current_alarm_session():
     """Return the currently active alarm session, if any."""
-    return alarm_sessions_repo.get_active_alarm_session()
+    current_session = alarm_sessions_repo.get_active_alarm_session()
+    if current_session:
+        return current_session
+
+    guard_session = alarm_sessions_repo.get_latest_guard_alarm_session()
+    if not guard_session:
+        return None
+
+    guard_expires_at = guard_session.get("guard_expires_at")
+    if not guard_expires_at:
+        return None
+
+    if datetime.fromisoformat(guard_expires_at) > datetime.now():
+        return guard_session
+
+    return None
 
 
 # MONITORING LOGIC
@@ -159,17 +179,86 @@ def _resume_snoozed_session_if_due(current_datetime):
     _broadcast_alarm_state(updated_session)
     return True
 
+def _retrigger_guard_session_if_due(current_datetime):
+    """
+    Retrigger a guard session if pressure has been held past the tolerance period.
+    This acts as a background check to catch scenarios where pressure is continuously 
+    applied and the initial tolerance timer runs out without a new sensor event.
+    """
+    current_session = alarm_sessions_repo.get_latest_guard_alarm_session()
+    if not current_session:
+        return False
+
+    if current_session["status"] != AlarmSessionStatus.GUARD:
+        return False
+
+    guard_expires_at = current_session.get("guard_expires_at")
+    if guard_expires_at:
+        if current_datetime >= datetime.fromisoformat(guard_expires_at):
+            return False
+
+    pressure_started_at = current_session.get("pressure_started_at")
+    if not pressure_started_at:
+        return False
+
+    pressure_started_at_dt = datetime.fromisoformat(pressure_started_at)
+    if current_datetime - pressure_started_at_dt < timedelta(seconds=GUARD_TOLERANCE_SECONDS):
+        return False
+
+    updated_session = alarm_sessions_repo.update_alarm_session(
+        current_session["id"],
+        status=AlarmSessionStatus.RINGING,
+        clear_guard_expires_at=True,
+        clear_guard_tolerance_until=True,
+        clear_pressure_started_at=True,
+        clear_snoozed_until=True,
+    )
+    alarm_player.start_loop(session_id=current_session["id"])
+    logger.info("Guard alarm session %s retriggered due to sustained pressure", current_session["id"])
+    _broadcast_alarm_state(updated_session)
+    return True
+
+def _dismiss_expired_guard_session_if_due(current_datetime):
+    """
+    Dismiss a guard session if its overall expiration time has passed.
+    Actively transitions the session status to DISMISSED, which triggers 
+    the morning assistant and automatically hides the guard screen on the frontend.
+    """
+    current_session = alarm_sessions_repo.get_latest_guard_alarm_session()
+    if not current_session:
+        return False
+
+    if current_session["status"] != AlarmSessionStatus.GUARD:
+        return False
+
+    guard_expires_at = current_session.get("guard_expires_at")
+    if not guard_expires_at:
+        return False
+
+    if current_datetime >= datetime.fromisoformat(guard_expires_at):
+        stop_ringing_session(current_session["id"], status=AlarmSessionStatus.DISMISSED)
+        logger.info("Guard alarm session %s expired and was dismissed", current_session["id"])
+        return True
+
+    return False
+
 def monitor_alarms(
-    poll_interval=10,
+    poll_interval=1,
     startup_grace_period=60,
 ):
-    """Continuously check for due alarms and call the provided callback."""
+    """
+    Continuously check for due alarms and manage active alarm sessions.
+    The poll_interval is kept low (e.g., 1 second) to ensure immediate responses 
+    when guard tolerance or expiration timers finish.
+    """
     logger.info("Wecker-Monitor gestartet")
     previous_check_datetime = datetime.now() - timedelta(seconds=startup_grace_period)
 
     while True:
         current_datetime = datetime.now()
         _resume_snoozed_session_if_due(current_datetime)
+        _dismiss_expired_guard_session_if_due(current_datetime)
+        _retrigger_guard_session_if_due(current_datetime)
         active_alarms = get_active_alarms()
 
         for alarm in active_alarms:
@@ -198,6 +287,10 @@ def _broadcast_alarm_state(session, message_type=AlarmSessionWsType.UPDATE):
     manager.broadcast_threadsafe(message)
 
 def start_ringing_sesssion(alarm):
+    """
+    Transition an active alarm to the RINGING state and start audio playback.
+    If a session is already ringing or snoozed, it prevents duplicate sessions from being created.
+    """
     existing_session = alarm_sessions_repo.get_unresolved_alarm_session_by_alarm_id(alarm["id"])
     if existing_session and existing_session.get("status") in (
         AlarmSessionStatus.RINGING,
@@ -216,6 +309,14 @@ def start_ringing_sesssion(alarm):
     _broadcast_alarm_state(current_session)
 
 def stop_ringing_session(session_id: int, status=AlarmSessionStatus.DISMISSED):
+    """
+    Stop an active alarm session and transition it to a new state (e.g., SNOOZED, GUARD, or DISMISSED).
+    
+    - Stops the audio player if the session is currently playing.
+    - Sets expiration/tolerance timers based on the target status (e.g., 5 min for SNOOZED, GUARD_EXPIRES_SECONDS for GUARD).
+    - Triggers the Ollama morning assistant (`wake_up`) if the session is fully DISMISSED.
+    - Broadcasts the updated state to connected WebSocket clients.
+    """
     existing_session = alarm_sessions_repo.get_alarm_session_by_id(session_id)
     if not existing_session:
         return None
@@ -231,13 +332,22 @@ def stop_ringing_session(session_id: int, status=AlarmSessionStatus.DISMISSED):
         )
 
     snoozed_until_time = (datetime.now() + timedelta(minutes=5)).isoformat() if status == AlarmSessionStatus.SNOOZED else None
-    if (snoozed_until_time != None):
+    if snoozed_until_time is not None:
         snoozed_until_time = datetime.fromisoformat(str(snoozed_until_time))
+
+    guard_expires_at_time = None
+    if status == AlarmSessionStatus.GUARD:
+        guard_expires_at_time = datetime.now() + timedelta(seconds=GUARD_EXPIRES_SECONDS)
+
     session = alarm_sessions_repo.update_alarm_session(
         session_id,
         status=status,
         snoozed_until=snoozed_until_time,
+        guard_expires_at=guard_expires_at_time,
         clear_snoozed_until=status != AlarmSessionStatus.SNOOZED,
+        clear_guard_expires_at=status != AlarmSessionStatus.GUARD,
+            clear_guard_tolerance_until=True,
+            clear_pressure_started_at=True,
     )
 
     if should_stop_audio:
@@ -246,6 +356,8 @@ def stop_ringing_session(session_id: int, status=AlarmSessionStatus.DISMISSED):
     _broadcast_alarm_state(session)
 
     if status == AlarmSessionStatus.DISMISSED and session:
+        # When the alarm is fully dismissed (either manually or after the guard timer expires),
+        # trigger the morning assistant to provide a briefing.
         alarm = alarms_repo.get_alarm_by_id(session["alarm_id"])
         if alarm:
             from domain.assistant.service import wake_up, is_ollama_available
@@ -271,3 +383,73 @@ def stop_ringing_session(session_id: int, status=AlarmSessionStatus.DISMISSED):
             )
 
     return session
+
+
+def handle_guard_pressure_sensor(session_id: int, pressed: bool = True):
+    """
+    Handle pressure sensor events while a guard session is active.
+    
+    - If the user gets into bed (pressed=True): starts the tolerance timer.
+      If the tolerance timer has already been running and is expired, it retriggers the alarm.
+      
+    - If the user gets out of bed (pressed=False): clears the tolerance timer and pressure start time,
+      resetting the sensor state back to ready.
+    """
+    existing_session = alarm_sessions_repo.get_alarm_session_by_id(session_id)
+    if not existing_session:
+        return None
+
+    if existing_session.get("status") != AlarmSessionStatus.GUARD:
+        return existing_session
+
+    guard_expires_at = existing_session.get("guard_expires_at")
+    if not guard_expires_at:
+        return existing_session
+
+    now = datetime.now()
+    guard_expires_at_dt = datetime.fromisoformat(guard_expires_at)
+    if guard_expires_at_dt <= now:
+        return existing_session
+
+    if not pressed:
+        # User left the bed, clear the ongoing tolerance timers
+        if existing_session.get("pressure_started_at") is not None:
+            updated_session = alarm_sessions_repo.update_alarm_session(
+                session_id,
+                clear_pressure_started_at=True,
+                clear_guard_tolerance_until=True,
+            )
+            _broadcast_alarm_state(updated_session)
+            return updated_session
+        return existing_session
+
+    pressure_started_at = existing_session.get("pressure_started_at")
+    if pressure_started_at:
+        pressure_started_at_dt = datetime.fromisoformat(pressure_started_at)
+    else:
+        # First time pressure is applied, start the tolerance timer
+        pressure_started_at_dt = now
+        guard_tolerance_until_time = now + timedelta(seconds=GUARD_TOLERANCE_SECONDS)
+        updated_session = alarm_sessions_repo.update_alarm_session(
+            session_id,
+            pressure_started_at=pressure_started_at_dt,
+            guard_tolerance_until=guard_tolerance_until_time,
+        )
+        _broadcast_alarm_state(updated_session)
+        return updated_session
+
+    # Pressure has been held, check if tolerance period has passed
+    if now - pressure_started_at_dt < timedelta(seconds=GUARD_TOLERANCE_SECONDS):
+        return existing_session
+    updated_session = alarm_sessions_repo.update_alarm_session(
+        session_id,
+        status=AlarmSessionStatus.RINGING,
+        clear_guard_expires_at=True,
+        clear_guard_tolerance_until=True,
+        clear_pressure_started_at=True,
+        clear_snoozed_until=True,
+    )
+
+    alarm_player.start_loop(session_id=session_id)
+    _broadcast_alarm_state(updated_session)
+    return updated_session

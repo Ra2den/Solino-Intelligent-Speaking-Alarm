@@ -4,6 +4,7 @@ export const AlarmSessionStatusSchema = z.enum([
   "RINGING",
   "SNOOZED",
   "DISMISSED",
+  "GUARD",
 ]);
 
 export const AlarmSessionSchema = z.object({
@@ -12,6 +13,9 @@ export const AlarmSessionSchema = z.object({
   status: AlarmSessionStatusSchema,
   started_at: z.string(),
   snoozed_until: z.string().nullable(),
+  guard_expires_at: z.string().nullable(),
+  guard_tolerance_until: z.string().nullable(),
+  pressure_started_at: z.string().nullable(),
   label: z.string().nullable(),
   ring_count: z.number(),
   message: z.string().nullable().optional(),

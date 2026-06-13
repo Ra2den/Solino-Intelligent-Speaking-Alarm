@@ -1,4 +1,3 @@
-
 export interface TranscriptionResponse {
   transcription: string | null;
   isListening: boolean;
@@ -9,7 +8,6 @@ export type StatusChangeCallback = (isListening: boolean) => void;
 export type ProcessingChangeCallback = (isProcessing: boolean) => void;
 export type ResultCallback = (text: string) => void;
 export type ErrorCallback = (error: string) => void;
-
 
 class AlarmNameRecorder {
   private ws: WebSocket | null = null;
@@ -22,7 +20,7 @@ class AlarmNameRecorder {
     onStatusChange: StatusChangeCallback,
     onProcessingChange: ProcessingChangeCallback,
     onResult: ResultCallback,
-    onError: ErrorCallback
+    onError: ErrorCallback,
   ) {
     this.onStatusChange = onStatusChange;
     this.onProcessingChange = onProcessingChange;
@@ -30,11 +28,32 @@ class AlarmNameRecorder {
     this.onError = onError;
   }
 
-  public connect(): void {
-    this.ws = new WebSocket("ws://localhost:8000/alarms/ws/record-name");
+  public connect(autoStart: boolean = false): void {
+    // Prevent duplicate connections if the user clicks rapidly
+    if (
+      this.ws &&
+      (this.ws.readyState === WebSocket.OPEN ||
+        this.ws.readyState === WebSocket.CONNECTING)
+    ) {
+      return;
+    }
+
+    // Dynamically get the base URL like in api-client.ts
+    let apiBase =
+      import.meta.env.VITE_BACKEND_IP?.trim() || "http://127.0.0.1:8000";
+    apiBase = apiBase.replace("localhost", "127.0.0.1"); // Force IPv4 to prevent resolution errors
+    const normalizedBase = apiBase.endsWith("/")
+      ? apiBase.slice(0, -1)
+      : apiBase;
+    const wsBase = normalizedBase.replace(/^http/, "ws");
+    this.ws = new WebSocket(`${wsBase}/alarms/ws/record-name`);
 
     this.ws.onopen = () => {
       console.log("✨ Verbunden mit Susonnes Audio-Socket");
+      this.onError("");
+      if (autoStart && this.ws) {
+        this.ws.send(JSON.stringify({ action: "start" }));
+      }
     };
 
     this.ws.onmessage = (event: MessageEvent) => {
@@ -64,18 +83,22 @@ class AlarmNameRecorder {
         }
       } catch (err) {
         this.onProcessingChange(false);
+        this.onStatusChange(false);
         this.onError("Fehler beim Verarbeiten der Server-Daten.");
       }
     };
 
     this.ws.onerror = (error: Event) => {
       this.onProcessingChange(false);
+      this.onStatusChange(false);
       this.onError("WebSocket-Verbindungsfehler");
       console.error("WS Error:", error);
     };
 
     this.ws.onclose = () => {
+      this.ws = null;
       this.onProcessingChange(false);
+      this.onStatusChange(false);
       console.log("WebSocket-Verbindung geschlossen.");
     };
   }
@@ -84,10 +107,13 @@ class AlarmNameRecorder {
     if (this.ws && this.ws.readyState === WebSocket.OPEN) {
       this.onProcessingChange(false);
       this.ws.send(JSON.stringify({ action: "start" }));
+    } else if (this.ws && this.ws.readyState === WebSocket.CONNECTING) {
+      this.onProcessingChange(true);
+      // Connection is already establishing; autoStart will trigger on open
     } else {
-      this.onProcessingChange(false);
-      this.onError("Verbindung zum Server fehlt. Versuche es erneut.");
-      this.connect();
+      // If not connected, indicate processing and auto-start once connected
+      this.onProcessingChange(true);
+      this.connect(true);
     }
   }
 
