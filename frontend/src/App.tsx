@@ -1,6 +1,6 @@
 import BgSimulator from "./components/BgSimulator";
 import { HomeScreen } from "./components/HomeScreen";
-import { PhaseProvider } from "./contexts/phase.context";
+import { PhaseProvider } from "./contexts/phase/phase.context";
 function App() {
   return (
     <PhaseProvider>

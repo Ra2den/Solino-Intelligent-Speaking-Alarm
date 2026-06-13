@@ -15,6 +15,7 @@ import { TemperatureDisplay } from "./TemperatureDisplay";
 import { PhaseSchema, type Phase } from "../../models/simulator/phase.model.js";
 import { usePhase } from "../../hooks/usePhase";
 import { WeatherConditionSchema } from "../../models/weather/weather-nowcast.model.js";
+import type { AiState } from "../../models/assistant/ai-state.model.js";
 
 const RAIN_DROP_POSITIONS = [
   "absolute -bottom-9 left-[5%] z-0 w-[20%]",
@@ -25,6 +26,7 @@ const RAIN_DROP_POSITIONS = [
 ] as const;
 
 type AgentProps = {
+  aiState?: AiState;
   isGuard?: boolean;
 };
 
@@ -98,7 +100,8 @@ export function Agent({ isGuard = false }: AgentProps) {
         />
         {/* Weather */}
         <div ref={weatherLayerRef}>
-          {condition === WeatherConditionSchema.enum.Clouds && displayCloudyWeather()}
+          {condition === WeatherConditionSchema.enum.Clouds &&
+            displayCloudyWeather()}
           {(condition === WeatherConditionSchema.enum.Drizzle ||
             condition === WeatherConditionSchema.enum.Rain ||
             condition === WeatherConditionSchema.enum.Thunderstorm) &&
@@ -218,14 +221,15 @@ export function Agent({ isGuard = false }: AgentProps) {
           />
         ))}
 
-        {/*Thunderbolt*/} 
-        {condition === WeatherConditionSchema.enum.Thunderstorm && startIndex%2 == 0 && ( //nur an jeder 2. Wolke
-          <img
-            src={thunderbolt}
-            alt="Thunderbolt"
-            className="absolute bottom-[-25%] left-[40%] z-0 w-[20%]"
-            /> 
-        )}
+        {/*Thunderbolt*/}
+        {condition === WeatherConditionSchema.enum.Thunderstorm &&
+          startIndex % 2 == 0 && ( //nur an jeder 2. Wolke
+            <img
+              src={thunderbolt}
+              alt="Thunderbolt"
+              className="absolute bottom-[-25%] left-[40%] z-0 w-[20%]"
+            />
+          )}
       </>
     );
   }

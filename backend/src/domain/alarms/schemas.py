@@ -58,11 +58,3 @@ class AlarmSessionWsMessage(BaseModel):
     
 class PressureSensorEvent(BaseModel):
     is_pressed: bool = True
-
-class AiState(str, Enum):
-    IDLE = "idle"
-    THINKING = "thinking"
-    SPEAKING = "speaking"
-
-class AiStateResponse(BaseModel):
-    state: AiState

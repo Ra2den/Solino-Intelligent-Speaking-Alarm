@@ -8,6 +8,7 @@ from openwakeword.model import Model
 
 from domain.assistant.service import interact
 from domain.assistant.schemas import AiState
+from domain.assistant.utils import trigger_backend_state
 
 FORMAT = pyaudio.paInt16
 CHANNELS = 1
@@ -15,17 +16,6 @@ RATE = 16000
 CHUNK = 1280
 
 FASTAPI_URL = "http://localhost:8000/alarms/set-ai-state-external"
-
-def trigger_backend_state(state: AiState):
-    """Schießt den neuen State per HTTP direkt in den echten FastAPI-Prozess."""
-    try:
-        requests.post(
-            FASTAPI_URL, 
-            json={"state": state.value},
-            timeout=0.5 
-        )
-    except Exception as e:
-        print(f"[CLI] Konnte State '{state.value}' nicht an FastAPI übertragen (Server offline?)")
 
 def main():
     print("= " * 15)
@@ -64,6 +54,7 @@ def main():
             score = oww_model.prediction_buffer[wake_word][-1]
             
             if score > 0.5:
+                trigger_backend_state(AiState.LISTENING)
                 print(f"\nWake Word '{wake_word}' erkannt! (Score: {score:.2f})")
                 print("Susonne wacht auf...")
                 

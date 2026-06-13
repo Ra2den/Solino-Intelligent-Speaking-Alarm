@@ -22,7 +22,7 @@ import torch
 
 from domain.assistant.utils import trigger_backend_state
 import domain.alarms.service as alarm_service
-from domain.alarms.schemas import AiState
+from domain.assistant.schemas import AiState
 from domain.assistant.state_manager import update_ai_state
 from domain.assistant.speech_to_text import STTService
 from domain.weather.service import (
@@ -363,6 +363,7 @@ def interact():
         ai_output(inputs=inputs, config=config, input_text=user_text)
     else:
         print("Ich habe nichts gehört. Bitte versuch es nochmal.")
+        trigger_backend_state(AiState.IDLE)
 
 
 def ai_output(inputs, config, input_text):

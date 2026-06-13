@@ -1,12 +1,12 @@
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 from typing import List, Optional
-from domain.alarms.schemas import Alarm, AlarmCreate, TranscriptionResponse, AiState, AiStateResponse
+from domain.alarms.schemas import Alarm, AlarmCreate, TranscriptionResponse
 from domain.alarms import service as alarms_service
 from domain.assistant.speech_to_text import STTService
 import asyncio
 from domain.assistant.state_manager import current_ai_status, active_status_connections
 from pydantic import BaseModel
-from domain.assistant.schemas import AiState
+from domain.assistant.schemas import AiState, AiStateResponse
 
 router = APIRouter(prefix="/alarms", tags=["Alarms"])
 

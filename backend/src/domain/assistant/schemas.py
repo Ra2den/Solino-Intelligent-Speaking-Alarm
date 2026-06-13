@@ -2,9 +2,10 @@ from pydantic import BaseModel
 from enum import Enum
 
 class AiState(str, Enum):
-    IDLE = "idle"
-    THINKING = "thinking"
-    SPEAKING = "speaking"
+    IDLE = "IDLE"
+    LISTENING = "LISTENING"
+    THINKING = "THINKING"
+    SPEAKING = "SPEAKING"
 
 class AiStateResponse(BaseModel):
     state: AiState
