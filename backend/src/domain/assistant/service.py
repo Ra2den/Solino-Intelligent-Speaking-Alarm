@@ -1,5 +1,5 @@
 import operator
-from typing import Annotated, TypedDict
+from typing import Annotated, TypedDict, Callable
 from langchain_ollama import ChatOllama  
 from langchain_core.messages import BaseMessage, HumanMessage, AIMessage
 from langchain_core.tools import tool
@@ -19,7 +19,7 @@ import torch
 
 from domain.assistant.utils import trigger_backend_state
 import domain.alarms.service as alarm_service
-from domain.alarms.schemas import AIState
+from domain.alarms.schemas import AiState
 from domain.assistant.state_manager import update_ai_state
 from domain.assistant.speech_to_text import STTService
 from domain.weather.service import (
@@ -250,7 +250,7 @@ app = workflow.compile(checkpointer=memory)
 
 config = {"configurable": {"thread_id": "haupt_user_session"}}
 
-def speak(text, input_text):
+def speak(text, input_text, on_play_audio_file: Callable[[], None] = None):
 
     #print(f"Generiere Audio für: {text}...")
     # 'aplay' ist der Standard-Player auf Linux (pw-play funktioniert aber besser), 'afplay' auf Mac
@@ -285,6 +285,8 @@ def speak(text, input_text):
 
     print(f"Fertig! Audio wurde erfolgreich als '{RESPONSE_WAV_PATH}' gespeichert!")
 
+    if on_play_audio_file:
+        on_play_audio_file()
     _play_audio_file(RESPONSE_WAV_PATH)
 
 
@@ -356,7 +358,7 @@ def ai_output(inputs, config, input_text):
 
     # 1. Per HTTP an FastAPI: Susonne überlegt!
     print("Zustand geändert: thinking")
-    trigger_backend_state(AIState.THINKING)
+    trigger_backend_state(AiState.THINKING)
 
     final_response = ""
     try:
@@ -371,10 +373,11 @@ def ai_output(inputs, config, input_text):
         if final_response:
             print(f"Susonne: {final_response}")
             
-            print("Zustand geändert: speaking")
-            trigger_backend_state(AIState.SPEAKING)
+            def on_speak_start():
+                print("Zustand geändert: speaking")
+                trigger_backend_state(AiState.SPEAKING)
             
-            speak(final_response,  input_text=input_text)
+            speak(final_response,  input_text=input_text, on_play_audio_file=on_speak_start)
         else:
             print("Keine Antwort von Susonne erhalten.")
 
@@ -383,7 +386,7 @@ def ai_output(inputs, config, input_text):
 
     finally:
         print("Zustand geändert: idle")
-        trigger_backend_state(AIState.IDLE)    
+        trigger_backend_state(AiState.IDLE)    
 if __name__ == '__main__':
    pass
    #wake_up("8:20","Uni")

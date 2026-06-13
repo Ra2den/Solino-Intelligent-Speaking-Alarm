@@ -1,11 +1,12 @@
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 from typing import List, Optional
-from domain.alarms.schemas import Alarm, AlarmCreate, TranscriptionResponse, AIStateResponse
+from domain.alarms.schemas import Alarm, AlarmCreate, TranscriptionResponse, AiState, AiStateResponse
 from domain.alarms import service as alarms_service
 from domain.assistant.speech_to_text import STTService
 import asyncio
-from domain.assistant.state_manager import current_ai_status, active_status_connections, AIStateResponse
+from domain.assistant.state_manager import current_ai_status, active_status_connections
 from pydantic import BaseModel
+from domain.assistant.schemas import AiState
 
 router = APIRouter(prefix="/alarms", tags=["Alarms"])
 
@@ -210,7 +211,7 @@ async def websocket_ai_state(websocket: WebSocket):
     active_status_connections.append(websocket)
     print(f"[WEBSOCKET] Neuer Client verbunden. Gesamt: {len(active_status_connections)}")
     
-    initial_response = AIStateResponse(state=current_ai_status["state"])
+    initial_response = AiStateResponse(state=current_ai_status["state"])
     await websocket.send_text(initial_response.model_dump_json())
     
     try:
@@ -223,14 +224,14 @@ async def websocket_ai_state(websocket: WebSocket):
             active_status_connections.remove(websocket)
 
 class StateTrigger(BaseModel):
-    state: str
+    state: AiState
 
 @router.post("/set-ai-state-external")
-def set_ai_state_external(data: StateTrigger):
+async def set_ai_state_external(data: StateTrigger):
     """
     Erlaubt es externen Prozessen (wie dem CLI-Skript), 
     den Zustand der WebSockets zu ändern.
     """
     from domain.assistant.state_manager import update_ai_state
-    update_ai_state(data.state)
-    return {"status": "success", "state_set": data.state}
+    await update_ai_state(data.state)
+    return {"status": "success", "state_set": data.state.value}

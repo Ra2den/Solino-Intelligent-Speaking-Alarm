@@ -7,6 +7,7 @@ import requests
 from openwakeword.model import Model
 
 from domain.assistant.service import interact
+from domain.assistant.schemas import AiState
 
 FORMAT = pyaudio.paInt16
 CHANNELS = 1
@@ -15,16 +16,16 @@ CHUNK = 1280
 
 FASTAPI_URL = "http://localhost:8000/alarms/set-ai-state-external"
 
-def trigger_backend_state(state: str):
+def trigger_backend_state(state: AiState):
     """Schießt den neuen State per HTTP direkt in den echten FastAPI-Prozess."""
     try:
         requests.post(
             FASTAPI_URL, 
-            json={"state": state},
+            json={"state": state.value},
             timeout=0.5 
         )
     except Exception as e:
-        print(f"[CLI] Konnte State '{state}' nicht an FastAPI übertragen (Server offline?)")
+        print(f"[CLI] Konnte State '{state.value}' nicht an FastAPI übertragen (Server offline?)")
 
 def main():
     print("= " * 15)

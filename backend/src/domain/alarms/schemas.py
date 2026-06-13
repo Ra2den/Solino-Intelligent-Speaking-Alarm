@@ -43,10 +43,10 @@ class TranscriptionResponse(BaseModel):
     isListening: bool
     error: Optional[str] = None
 
-class AIState(str, Enum):
+class AiState(str, Enum):
     IDLE = "idle"
     THINKING = "thinking"
     SPEAKING = "speaking"
 
-class AIStateResponse(BaseModel):
-    state: AIState
+class AiStateResponse(BaseModel):
+    state: AiState
