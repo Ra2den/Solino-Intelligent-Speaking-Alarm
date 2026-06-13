@@ -9,12 +9,9 @@ import db.alarms_repo as alarms_repo
 from domain.alarms.player import alarm_player
 from domain.alarms.schemas import AlarmSession, AlarmSessionStatus, Weekday, AlarmSessionWsMessage, AlarmSessionWsType
 from domain.alarms.helper.alarm_helper import validate_weekdays
+from domain.settings import service as settings_service
 
 logger = logging.getLogger(__name__)
-
-# Configurable time windows for development (defaults to 30s guard expiry and 60s tolerance)
-GUARD_EXPIRES_SECONDS = int(os.getenv("GUARD_EXPIRES_SECONDS", 30))
-GUARD_TOLERANCE_SECONDS = int(os.getenv("GUARD_TOLERANCE_SECONDS", 10))
 
 WEEKDAY_MAP = {
     0: Weekday.MON,
@@ -202,7 +199,9 @@ def _retrigger_guard_session_if_due(current_datetime):
         return False
 
     pressure_started_at_dt = datetime.fromisoformat(pressure_started_at)
-    if current_datetime - pressure_started_at_dt < timedelta(seconds=GUARD_TOLERANCE_SECONDS):
+    
+    guard_tolerance_min = settings_service.get_guard_mode_tolerance_min()
+    if current_datetime - pressure_started_at_dt < timedelta(minutes=guard_tolerance_min):
         return False
 
     updated_session = alarm_sessions_repo.update_alarm_session(
@@ -330,14 +329,17 @@ def stop_ringing_session(session_id: int, status=AlarmSessionStatus.DISMISSED):
             session_id,
             current_audio_session_id,
         )
+        
+    snooze_duration = settings_service.get_snooze_duration_min()
 
-    snoozed_until_time = (datetime.now() + timedelta(minutes=5)).isoformat() if status == AlarmSessionStatus.SNOOZED else None
+    snoozed_until_time = (datetime.now() + timedelta(minutes=snooze_duration)).isoformat() if status == AlarmSessionStatus.SNOOZED else None
     if snoozed_until_time is not None:
         snoozed_until_time = datetime.fromisoformat(str(snoozed_until_time))
 
     guard_expires_at_time = None
     if status == AlarmSessionStatus.GUARD:
-        guard_expires_at_time = datetime.now() + timedelta(seconds=GUARD_EXPIRES_SECONDS)
+        guard_expires_min = settings_service.get_guard_mode_timer_min()
+        guard_expires_at_time = datetime.now() + timedelta(minutes=guard_expires_min)
 
     session = alarm_sessions_repo.update_alarm_session(
         session_id,
@@ -422,14 +424,16 @@ def handle_guard_pressure_sensor(session_id: int, pressed: bool = True):
             _broadcast_alarm_state(updated_session)
             return updated_session
         return existing_session
-
+    
+    guard_tolerance_min = settings_service.get_guard_mode_tolerance_min()
     pressure_started_at = existing_session.get("pressure_started_at")
     if pressure_started_at:
         pressure_started_at_dt = datetime.fromisoformat(pressure_started_at)
     else:
         # First time pressure is applied, start the tolerance timer
         pressure_started_at_dt = now
-        guard_tolerance_until_time = now + timedelta(seconds=GUARD_TOLERANCE_SECONDS)
+        
+        guard_tolerance_until_time = now + timedelta(minutes=guard_tolerance_min)
         updated_session = alarm_sessions_repo.update_alarm_session(
             session_id,
             pressure_started_at=pressure_started_at_dt,
@@ -439,7 +443,7 @@ def handle_guard_pressure_sensor(session_id: int, pressed: bool = True):
         return updated_session
 
     # Pressure has been held, check if tolerance period has passed
-    if now - pressure_started_at_dt < timedelta(seconds=GUARD_TOLERANCE_SECONDS):
+    if now - pressure_started_at_dt < timedelta(minutes=guard_tolerance_min):
         return existing_session
     updated_session = alarm_sessions_repo.update_alarm_session(
         session_id,
