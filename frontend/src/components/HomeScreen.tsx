@@ -10,13 +10,20 @@ import settingsIcon from "/src/assets/alarm/icon-settingsBtn.svg";
 import { AlarmList } from "./alarm/AlarmList";
 import { useAlarmSession } from "../contexts/alarm-session.context";
 import { AlarmRingingScreen } from "./AlarmRingingScreen";
+import { AlarmGuardScreen } from "./AlarmGuardScreen";
 import SettingsScreen from "./SettingsScreen";
 
 export function HomeScreen() {
   const [isCreate, setIsCreate] = useState(false);
   const [isListView, setIsListView] = useState(false);
-  const { isRinging, currentAlarmSession, stopAlarm, snoozeAlarm } =
-    useAlarmSession();
+  const {
+    isRinging,
+    isGuard,
+    currentAlarmSession,
+    stopAlarm,
+    snoozeAlarm,
+    togglePressureSensor,
+  } = useAlarmSession();
 
   const [isSettingsView, setIsSettingsView] = useState(false);
 
@@ -31,9 +38,25 @@ export function HomeScreen() {
             onSnooze={() => snoozeAlarm()}
           />
         </div>
-        {/* Agent bleibt rechts */}
         <div className="col-span-3">
           <Agent />
+        </div>
+      </div>
+    );
+  }
+
+  if (isGuard && currentAlarmSession) {
+    return (
+      <div className="w-full h-full overflow-hidden grid grid-cols-5 p-12 gap-6">
+        {/* Guard mode widget */}
+        <div className="col-span-2 h-full">
+          <AlarmGuardScreen
+            session={currentAlarmSession}
+            onPressureStart={togglePressureSensor}
+          />
+        </div>
+        <div className="col-span-3">
+          <Agent isGuard />
         </div>
       </div>
     );

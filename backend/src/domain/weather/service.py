@@ -254,23 +254,23 @@ def get_sunset_time():
 
 def get_max_temp_from_forecast(forecast):
     max_temp = forecast[0].temperature
-    max_temp_time = int(forecast[0].time[11:13])
+    max_temp_time = int(forecast[0].time.strftime("%H"))
 
     for data in forecast:
         if data.temperature > max_temp:
             max_temp = data.temperature
-            max_temp_time = int(data.time[11:13])
+            max_temp_time = int(data.time.strftime("%H"))
 
     return max_temp, max_temp_time
 
 def get_min_temp_from_forecast(forecast):
     min_temp = forecast[0].temperature
-    min_temp_time = int(forecast[0].time[11:13])
+    min_temp_time = int(forecast[0].time.strftime("%H"))
 
     for data in forecast:
         if data.temperature < min_temp:
             min_temp = data.temperature
-            min_temp_time = int(data.time[11:13])
+            min_temp_time = int(data.time.strftime("%H"))
 
     return min_temp, min_temp_time
 
