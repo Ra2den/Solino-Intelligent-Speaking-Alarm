@@ -37,16 +37,9 @@ BACKEND_ROOT = Path(__file__).resolve().parents[3]
 ASSETS_DIR = BACKEND_ROOT / "assets"
 MODELS_DIR = ASSETS_DIR / "models"
 AUDIO_DIR = ASSETS_DIR / "audio"
-SETTINGS_PATH = BACKEND_ROOT / "settings.json"
 RESPONSE_WAV_PATH = AUDIO_DIR / "response.wav"
 
-AUDIO_DIR.mkdir(parents=True, exist_ok=True)
-
-with SETTINGS_PATH.open("r") as file:
-    settings = json.load(file)
-if settings:
-    speaker = settings["speaker"]
-
+AUDIO_DIR.mkdir(parents=True, exist_ok=True) 
 
 system_message = SystemMessage(
     content="""
