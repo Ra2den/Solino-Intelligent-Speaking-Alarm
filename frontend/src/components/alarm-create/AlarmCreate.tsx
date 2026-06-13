@@ -18,6 +18,8 @@ import micRedIcon from "../../assets/alarm-create/mic-red.svg";
 
 type Inputs = {
   time: string;
+  hours: number | string;
+  minutes: number | string;
   recurring_days: WeekdayArray;
   label: string;
 };
@@ -31,6 +33,8 @@ export function AlarmCreate({ alarm, onCreate }: AlarmCreateProps) {
   const { handleSubmit, control, reset, setValue } = useForm<Inputs>({
     defaultValues: {
       time: alarm?.time ?? "00:00",
+      hours: alarm?.time?.slice(0, 2) ?? "00",
+      minutes: alarm?.time?.slice(3, 5) ?? "00",
       recurring_days: alarm?.recurring_days ?? null,
       label: alarm?.label ?? "Wecker 1",
     },
@@ -38,8 +42,8 @@ export function AlarmCreate({ alarm, onCreate }: AlarmCreateProps) {
   const [isListening, setIsListening] = useState<boolean>(false);
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
   const [error, setError] = useState<string>("");
-
   const recorderRef = useRef<AlarmNameRecorder | null>(null);
+  let digits: string;
 
   useEffect(() => {
     // 1. Recorder-Instanz mit den drei Callbacks erstellen
@@ -55,6 +59,8 @@ export function AlarmCreate({ alarm, onCreate }: AlarmCreateProps) {
 
     reset({
       time: alarm?.time ?? "00:00",
+      hours: alarm?.time?.slice(0, 2) ?? "00",
+      minutes: alarm?.time?.slice(3, 5) ?? "00",
       recurring_days: alarm?.recurring_days ?? null,
       label: alarm?.label ?? "Wecker 1",
     });
@@ -79,22 +85,21 @@ export function AlarmCreate({ alarm, onCreate }: AlarmCreateProps) {
             control={control}
             name="time"
             render={({ field }) => {
-              const digits = (field.value ?? "00:00").replace(/\D/g, "").slice(0, 4);
-              const displayTime =
-                digits.length === 4
-                  ? `${digits.slice(0, 2)}:${digits.slice(2, 4)}`
-                  : "HH:MM";
+              digits = (field.value ?? "00:00").replace(/\D/g, "").slice(0, 4);
+              const { hours, minutes } = splitValidateDigits();
+              setValue('hours', hours);
+              setValue('minutes', minutes);
 
               return (
                 <div className="flex flex-col items-center justify-center gap-5">
                   {/* Uhrzeit */}
                   <div className="text-[75px] leading-none font-medium tracking-[-0.04em] max-md:text-[60px]">
-                    {displayTime}
+                    {hours}:{minutes}
                   </div>
                   <NumPad
                     value={digits}
                     onChange={(nextDigits) => {
-                      field.onChange(formatDigitsToTime(nextDigits));
+                      field.onChange(nextDigits);
                     }}
                     onClear={() => field.onChange("00:00")}
                     onConfirm={() => undefined}
@@ -184,6 +189,31 @@ export function AlarmCreate({ alarm, onCreate }: AlarmCreateProps) {
     </>
   );
 
+  function splitValidateDigits() {
+  let hoursTemp : number | string = digits.slice(0, 2);
+  let minutesTemp : number | string = digits.slice(2, 4);
+
+  hoursTemp = parseInt(hoursTemp, 10) > 24 
+            ? '24' 
+          : parseInt(hoursTemp, 10) < 0 
+            ? '00' 
+          : hoursTemp;
+
+  minutesTemp = parseInt(minutesTemp, 10) > 59 
+            ? '59' 
+          : parseInt(minutesTemp, 10) < 0 
+            ? '00' 
+          : minutesTemp;
+
+
+  digits = `${hoursTemp.padEnd(2, '0')}${minutesTemp.padEnd(2, '0')}`;
+
+  return {
+    hours: hoursTemp.toString(),
+    minutes: minutesTemp.toString(),
+  };
+  }
+
   function handleButtonClick() {
     if (!recorderRef.current) return;
     if (isProcessing) return;
@@ -196,14 +226,6 @@ export function AlarmCreate({ alarm, onCreate }: AlarmCreateProps) {
       recorderRef.current.startRecording();
     }
   }
-
-  const formatTimeToDigits = (time?: string) =>
-    (time ?? "00:00").replace(/\D/g, "").slice(0, 4).padStart(4, "0");
-
-  const formatDigitsToTime = (digits: string) => {
-    const cleaned = digits.replace(/\D/g, "").slice(0, 4).padEnd(4, "0");
-    return `${cleaned.slice(0, 2)}:${cleaned.slice(2, 4)}`;
-  };
 
   async function onSubmit(data: Inputs): Promise<void> {
     if (typeof alarm?.id === "number") {

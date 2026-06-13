@@ -1,4 +1,4 @@
-﻿import React from 'react';
+﻿import { useEffect, useState } from 'react';
 
 export type NumPadProps = {
   value?: string;
@@ -9,27 +9,41 @@ export type NumPadProps = {
 
 const keys = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0'];
 
-function formatDisplayValue(value = '') {
-  if (!value) return 'Enter time';
-  const digits = value.replace(/\D/g, '').slice(0, 4).padStart(4, '0');
-  return `${digits.slice(0, 2)}:${digits.slice(2, 4)}`;
+//truncate to 4 digits and only numbers allowed
+function normalizeDigits(value = '') {
+  const digits = value.replace(/\D/g, '').slice(0, 4);
+  return digits === '0000' ? '' : digits;
 }
 
 function appendDigit(value: string, key: string) {
-  return `${value}${key}`.replace(/\D/g, '').slice(0, 4);
+  // Treat the default 0000 as empty input so the first user digit is visible.
+  const current = normalizeDigits(value);
+
+  // Removes any non-digit characters and limits to 4 digits.
+  const appended = `${current}${key}`.replace(/\D/g, '').slice(0, 4);
+
+  return appended;
 }
 
 export function NumPad({ value = '', onChange, onConfirm, onClear }: NumPadProps) {
-  const formattedValue = formatDisplayValue(value);
+  const [displayValue, setDisplayValue] = useState(() => normalizeDigits(value));
+
+  useEffect(() => {
+    setDisplayValue(normalizeDigits(value));
+  }, [value]);
+
 
   const handlePress = (key: string) => {
+    const nextValue = appendDigit(displayValue, key);
+
+    setDisplayValue(nextValue);
     if (!onChange) return;
-    onChange(appendDigit(value, key));
+    onChange(nextValue);
   };
 
   return (
     <div className="num-pad">
-      <div className="num-pad__display">{formattedValue}</div>
+      <div className="num-pad__display">{displayValue}</div>
       <div className="grid grid-cols-3 gap-2.5 font-medium text-black hover:bg-gray-200">
         {keys.map((key) => (
           <button
@@ -44,7 +58,10 @@ export function NumPad({ value = '', onChange, onConfirm, onClear }: NumPadProps
         <button
           type="button"
           className="flex h-15 w-17 items-center justify-center bg-white px-3 py-1.25 text-[20px] rounded-[10px]"
-          onClick={onClear}
+          onClick={() => {
+            setDisplayValue('');
+            onClear?.();
+          }}
         >
           Clear
         </button>
