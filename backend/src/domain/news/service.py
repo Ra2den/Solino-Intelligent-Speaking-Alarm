@@ -1,6 +1,7 @@
 import requests
 import json
 import re
+from datetime import datetime
 from domain.news.schemas import NewsHeadline, DetailedNews
 
 BASE_URL = "https://www.tagesschau.de/api2u"
@@ -60,9 +61,10 @@ def insert_detailed_news_from_json_into_news_map(news_json):
             if (headline.get(TYPE, '') == STORY):
                 content += remove_html(headline.get(FIRST_SCENTENCE, ''))
 
+        time_value = str(headline[DATE_TIME])
         current_headline = DetailedNews(
             id = headline[EXTERNAL_ID],
-            time = headline[DATE_TIME],
+            time = datetime.fromisoformat(time_value),
             headline = headline[TITLE],
             content = content
         )
@@ -78,10 +80,11 @@ def extract_news_headlines_from_json(news_json):
             continue
 
         headline_cache = news_map.get(headline[EXTERNAL_ID])
+        time_value = str(getattr(headline_cache, 'time', headline[DATE_TIME]))
         current_headline = NewsHeadline(
-            id=getattr(headline_cache, 'id', headline[EXTERNAL_ID]),
-            time=getattr(headline_cache, 'time', headline[DATE_TIME]),
-            headline=getattr(headline_cache, 'headline', headline[TITLE]),
+            id = getattr(headline_cache, 'id', headline[EXTERNAL_ID]),
+            time = datetime.fromisoformat(time_value),
+            headline = getattr(headline_cache, 'headline', headline[TITLE]),
         )
 
         news_headlines.append(current_headline)

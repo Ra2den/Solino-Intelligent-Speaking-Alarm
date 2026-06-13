@@ -113,8 +113,8 @@ async def websocket_record_name(websocket: WebSocket):
     WebSocket endpoint to record an alarm name via audio,
     transcribe it, and stream the status and result back to the frontend.
     """
-    await websocket.accept()
     global is_recording_globally
+    await websocket.accept()
     stt_service = None
     recording_task = None
 
@@ -193,6 +193,16 @@ async def websocket_record_name(websocket: WebSocket):
 
     except WebSocketDisconnect:
         print("Frontend hat die Verbindung getrennt.")
+    except Exception as e:
+        print(f"Backend WebSocket Error: {e}")
+        try:
+            response = TranscriptionResponse(
+                isListening=False,
+                error=f"Server-Fehler: {str(e)}"
+            )
+            await websocket.send_text(response.model_dump_json())
+        except Exception:
+            pass
     finally:
         if stt_service is not None:
             stt_service.stop_recording()

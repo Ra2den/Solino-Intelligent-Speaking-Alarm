@@ -63,7 +63,6 @@ The backend contains the core Python logic for Solino:
    ```
 
 6. Download the Piper voice model into `backend/models/`:
-
    ```bash
    mkdir -p backend/models
    cd backend/models
@@ -73,12 +72,12 @@ The backend contains the core Python logic for Solino:
    curl -L "https://huggingface.co/rhasspy/piper-voices/resolve/main/de/de_DE/kerstin/low/de_DE-kerstin-low.onnx.json?download=true" -o de_DE-kerstin-low.onnx.json
    ```
 
-7. If macOS: Install Portaudio:
-   ```
-   export CFLAGS="-I$(brew --prefix portaudio)/include"
-   export LDFLAGS="-L$(brew --prefix portaudio)/lib"
-   pip install pyaudio
-   ```
+7. If macOS: Install Portaudio: 
+    ```
+    export CFLAGS="-I$(brew --prefix portaudio)/include"
+    export LDFLAGS="-L$(brew --prefix portaudio)/lib"
+    pip install pyaudio
+    ```
 
 ## Run the backend
 
