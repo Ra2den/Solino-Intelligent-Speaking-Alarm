@@ -15,7 +15,7 @@ CHANNELS = 1
 RATE = 16000
 CHUNK = 1280
 
-FASTAPI_URL = "http://localhost:8000/alarms/set-ai-state-external"
+FASTAPI_URL = "http://127.0.0.1:8000/alarms/set-ai-state-external"
 
 def main():
     print("= " * 15)

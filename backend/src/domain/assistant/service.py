@@ -208,11 +208,19 @@ model = ChatOllama(
     temperature=0,
 ).bind_tools(tools)
 
-print("Lade OmniVoice Modell...")
+# Dynamically resolve PyTorch compute device
+device = "cpu"
+if torch.cuda.is_available():
+    device = "cuda"
+elif hasattr(torch.backends, "mps") and torch.backends.mps.is_available():
+    device = "mps"
+
+print(f"Lade OmniVoice Modell auf Gerät: {device}...")
 tts_model = OmniVoice.from_pretrained(
     "k2-fsa/OmniVoice",
-    device_map="mps",  #mps only for silicon mac, cpu for cpu / "cuda:0" for gpu 
-    dtype=torch.float16   
+    device_map=device,
+    # CPU does not support half-precision float16 for many common operations
+    dtype=torch.float16 if device != "cpu" else torch.float32   
 )
 
 class AgentState(TypedDict):
@@ -255,34 +263,38 @@ def speak(text, input_text, on_play_audio_file: Callable[[], None] = None):
     voice_setting = settings_service.get_voice()
     #print(f"Generiere Audio für: {text}...")
     # 'aplay' ist der Standard-Player auf Linux (pw-play funktioniert aber besser), 'afplay' auf Mac
-    # if voice_setting == VoiceOption.MALE:
-    #     model_path = MODELS_DIR / "de_DE-thorsten-high.onnx"
-    # elif voice_setting == VoiceOption.FEMALE:
-    #     model_path = MODELS_DIR / "de_DE-kerstin-low.onnx"
+    if not INPUT_AUDIO_PATH.exists():
+        print(f"WARNUNG: Klon-Audiodatei '{INPUT_AUDIO_PATH}' wurde nicht gefunden. Verwende Piper fallback...")
+        if voice_setting == VoiceOption.MALE:
+            model_path = MODELS_DIR / "de_DE-thorsten-high.onnx"
+        elif voice_setting == VoiceOption.FEMALE:
+            model_path = MODELS_DIR / "de_DE-kerstin-low.onnx"
+        else:
+            model_path = MODELS_DIR / "de_DE-thorsten-high.onnx"
 
-    # subprocess.run(
-    #     [
-    #         "piper",
-    #         "--model",
-    #         str(model_path),
-    #         "--output_file",
-    #         str(RESPONSE_WAV_PATH),
-    #     ],
-    #     input=text,
-    #     text=True,
-    #     check=True,
-    # )
+        subprocess.run(
+            [
+                "piper",
+                "--model",
+                str(model_path),
+                "--output_file",
+                str(RESPONSE_WAV_PATH),
+            ],
+            input=text,
+            text=True,
+            check=True,
+        )
+    else:
+        ref_waveform, ref_sr = sf.read(INPUT_AUDIO_PATH)
 
-    ref_waveform, ref_sr = sf.read(INPUT_AUDIO_PATH)
+        print("Generiere Audio (Voice Clone)...")
+        audio = tts_model.generate(
+            text=text,
+            ref_audio=(ref_waveform, ref_sr),
+            ref_text=input_text, 
+        )
 
-    print("Generiere Audio (Voice Clone)...")
-    audio = tts_model.generate(
-        text=text,
-        ref_audio=(ref_waveform, ref_sr),
-        ref_text=input_text, 
-    )
-
-    sf.write(RESPONSE_WAV_PATH, audio[0], 24000)
+        sf.write(RESPONSE_WAV_PATH, audio[0], 24000)
 
     print(f"Fertig! Audio wurde erfolgreich als '{RESPONSE_WAV_PATH}' gespeichert!")
 

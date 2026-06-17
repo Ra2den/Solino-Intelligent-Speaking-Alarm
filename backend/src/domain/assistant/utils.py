@@ -1,7 +1,7 @@
 import requests
 from domain.assistant.schemas import AiState
 
-FASTAPI_URL = "http://localhost:8000/alarms/set-ai-state-external"
+FASTAPI_URL = "http://127.0.0.1:8000/alarms/set-ai-state-external"
 
 def trigger_backend_state(state: AiState):
     """Schießt den neuen State per HTTP direkt in den echten FastAPI-Prozess."""
