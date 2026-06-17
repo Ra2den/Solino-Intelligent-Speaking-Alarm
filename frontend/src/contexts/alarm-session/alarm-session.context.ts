@@ -1,5 +1,5 @@
 import { createContext, useContext } from "react";
-import { type AlarmSession } from "../models/alarm-session.model";
+import { type AlarmSession } from "../../models/alarm-session.model";
 
 type AlarmSessionContextValue = {
   currentAlarmSession: AlarmSession | null;

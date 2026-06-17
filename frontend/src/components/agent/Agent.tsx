@@ -1,10 +1,12 @@
 import solinoBase from "../../assets/agent/solino_base.svg";
 import molinoBase from "../../assets/agent/molino_base.svg";
 import solinoRing from "../../assets/agent/solino_ring.svg";
-import expressionDefault from "../../assets/agent/expression_default.svg";
 import expressionRaisedBrows from "../../assets/agent/expression_guard.svg";
-import expressionSleeping from "../../assets/agent/expression_sleeping.svg";
-import { useLayoutEffect, useRef } from "react";
+import sleepingEyes from "../../assets/agent/facial-expressions/eyes-sleeping.svg";
+import eyes from "../../assets/agent/facial-expressions/eyes.svg";
+import mouthOpen from "../../assets/agent/facial-expressions/mouth-open.svg";
+import mouthDefault from "../../assets/agent/facial-expressions/mouth-default.svg";
+import { useLayoutEffect, useRef, useState, useEffect, useCallback } from "react";
 import gsap from "gsap";
 import { useWeatherNowcast } from "../../hooks/weather/useWeatherNowcast";
 import cloudM from "../../assets/agent/cloud_m.png";
@@ -15,6 +17,11 @@ import { TemperatureDisplay } from "./TemperatureDisplay";
 import { PhaseSchema, type Phase } from "../../models/simulator/phase.model.js";
 import { usePhase } from "../../hooks/usePhase";
 import { WeatherConditionSchema } from "../../models/weather/weather-nowcast.model.js";
+import {
+  type AiState,
+  AiStateSchema,
+} from "../../models/assistant/ai-state.model.js";
+import thinkingBubble from "../../assets/agent/thinking-bubble.svg";
 
 const RAIN_DROP_POSITIONS = [
   "absolute -bottom-9 left-[5%] z-0 w-[20%]",
@@ -25,12 +32,41 @@ const RAIN_DROP_POSITIONS = [
 ] as const;
 
 type AgentProps = {
+  aiState?: AiState;
   isGuard?: boolean;
 };
 
-export function Agent({ isGuard = false }: AgentProps) {
+export function Agent({ isGuard = false, aiState }: AgentProps) {
   const { data: weatherData, isLoading, error } = useWeatherNowcast();
   const phase = usePhase();
+
+  const [showMouthOpen, setShowMouthOpen] = useState(false);
+  const isSpeaking = aiState === AiStateSchema.enum.SPEAKING;
+
+  const startSpeakingAnimation = useCallback(() => {
+    if (!isSpeaking) {
+      return;
+    }
+
+    let timeoutId: number;
+    const toggleMouth = () => {
+      setShowMouthOpen((prev) => !prev);
+      const nextDelay = Math.random() * 150 + 100; // between 100ms and 250ms
+      timeoutId = window.setTimeout(toggleMouth, nextDelay);
+    };
+
+    // Defer the first toggle to make it asynchronous
+    timeoutId = window.setTimeout(toggleMouth, 150);
+
+    return () => {
+      clearTimeout(timeoutId);
+      setShowMouthOpen(false);
+    };
+  }, [isSpeaking]);
+
+  useEffect(() => {
+    return startSpeakingAnimation();
+  }, [startSpeakingAnimation]);
 
   // GSAP
   const weatherLayerRef = useRef<HTMLDivElement | null>(null);
@@ -98,7 +134,8 @@ export function Agent({ isGuard = false }: AgentProps) {
         />
         {/* Weather */}
         <div ref={weatherLayerRef}>
-          {condition === WeatherConditionSchema.enum.Clouds && displayCloudyWeather()}
+          {condition === WeatherConditionSchema.enum.Clouds &&
+            displayCloudyWeather()}
           {(condition === WeatherConditionSchema.enum.Drizzle ||
             condition === WeatherConditionSchema.enum.Rain ||
             condition === WeatherConditionSchema.enum.Thunderstorm) &&
@@ -121,6 +158,15 @@ export function Agent({ isGuard = false }: AgentProps) {
           />
           {getExpression(isGuard, phase)}
         </div>
+        <div>
+          {aiState == AiStateSchema.enum.THINKING && (
+            <img
+              className="absolute w-50 right-0 top-0"
+              src={thinkingBubble}
+              alt="Thinking bubble"
+            />
+          )}
+        </div>
       </div>
     </>
   );
@@ -136,19 +182,49 @@ export function Agent({ isGuard = false }: AgentProps) {
       );
     } else if (currentPhase === PhaseSchema.parse("Night")) {
       return (
-        <img
-          className="absolute top-[25%] left-1/2 z-1 w-[25%] -translate-x-1/2"
-          src={expressionSleeping}
-          alt="Expression of Solino with raised Eyebrows"
-        />
+        <>
+          <img
+            className="absolute top-[25%] left-1/2 z-1 w-[25%] -translate-x-1/2"
+            src={sleepingEyes}
+            alt="Sleeping Eyes of Solino"
+          />
+          {showMouthOpen ? (
+            <img
+              className="absolute top-[30%] left-1/2 z-1 w-[11%] -translate-x-1/2"
+              src={mouthOpen}
+              alt="Speaking Mouth Expression of Solino"
+            />
+          ) : (
+            <img
+              className="absolute top-[30%] left-1/2 z-1 w-[11%] -translate-x-1/2"
+              src={mouthDefault}
+              alt="Happy Mouth Expression of Solino"
+            />
+          )}
+        </>
       );
     } else {
       return (
-        <img
-          className="absolute top-[25%] left-1/2 z-1 w-[25%] -translate-x-1/2"
-          src={expressionDefault}
-          alt="Happy Expression of Solino"
-        />
+        <>
+          <img
+            className="absolute top-[25%] left-1/2 z-1 w-[25%] -translate-x-1/2"
+            src={eyes}
+            alt="Eyes of Solino"
+          />
+          {showMouthOpen ? (
+            <img
+              className="absolute top-[32%] left-1/2 z-1 w-[16%] -translate-x-1/2"
+              src={mouthOpen}
+              alt="Speaking Mouth Expression of Solino"
+            />
+          ) : (
+            <img
+              className="absolute top-[32%] left-1/2 z-1 w-[16%] -translate-x-1/2"
+              src={mouthDefault}
+              alt="Happy Mouth Expression of Solino"
+            />
+          )}
+        </>
       );
     }
   }
@@ -218,15 +294,18 @@ export function Agent({ isGuard = false }: AgentProps) {
           />
         ))}
 
-        {/*Thunderbolt*/} 
-        {condition === WeatherConditionSchema.enum.Thunderstorm && startIndex%2 == 0 && ( //nur an jeder 2. Wolke
-          <img
-            src={thunderbolt}
-            alt="Thunderbolt"
-            className="absolute bottom-[-25%] left-[40%] z-0 w-[20%]"
-            /> 
-        )}
+        {/*Thunderbolt*/}
+        {condition === WeatherConditionSchema.enum.Thunderstorm &&
+          startIndex % 2 == 0 && ( //nur an jeder 2. Wolke
+            <img
+              src={thunderbolt}
+              alt="Thunderbolt"
+              className="absolute bottom-[-25%] left-[40%] z-0 w-[20%]"
+            />
+          )}
       </>
     );
   }
+
+
 }
