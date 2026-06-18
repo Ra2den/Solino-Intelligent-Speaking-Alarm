@@ -107,7 +107,7 @@ export function AlarmCreate({ alarm, onCreate, onBack }: AlarmCreateProps) {
         onSubmit={handleSubmit(onSubmit)}
         className="w-full h-[720px]"
       >
-        <div className="flex-column items-center justify-center">
+        <div className="flex-column items-center justify-around h-full">
           <button
               onClick={onBack}
               className="flex justify-center items-center w-25 h-30 padding-16"
@@ -185,17 +185,17 @@ export function AlarmCreate({ alarm, onCreate, onBack }: AlarmCreateProps) {
                 </div>
               
               {/* WEEKDAYS */}
-              <div className={numPadtoggled ? "hidden" : "flex flex-col items-center justify-center gap-3"}>
+              <div className={numPadtoggled ? "hidden" : "flex flex-col w-[550px] items-center justify-center gap-3"}>
                 {/* Weekday */}
                 <Controller
                   control={control}
                   name="recurring_days"
                   render={({ field }) => (
                     <div>
-                      <WeekdayChips
-                        recurringDays={field.value}
-                        onChange={field.onChange}
-                      />
+                        <WeekdayChips
+                          recurringDays={field.value}
+                          onChange={field.onChange}
+                        />
                     </div>
                   )}
                 />

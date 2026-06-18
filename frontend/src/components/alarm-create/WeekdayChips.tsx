@@ -4,13 +4,13 @@ import {
 } from "../../models/alarm/alarm.model";
 
 const dayChips: Array<{ label: string; value: Weekday }> = [
-  { label: "M", value: "MON" },
-  { label: "D", value: "TUE" },
-  { label: "M", value: "WED" },
-  { label: "D", value: "THU" },
-  { label: "F", value: "FRI" },
-  { label: "S", value: "SAT" },
-  { label: "S", value: "SUN" },
+  { label: "MO", value: "MON" },
+  { label: "DI", value: "TUE" },
+  { label: "MI", value: "WED" },
+  { label: "DO", value: "THU" },
+  { label: "FR", value: "FRI" },
+  { label: "SA", value: "SAT" },
+  { label: "SO", value: "SUN" },
 ];
 
 type WeekdayChipsProps = {
@@ -20,25 +20,27 @@ type WeekdayChipsProps = {
 
 export function WeekdayChips({ recurringDays, onChange }: WeekdayChipsProps) {
   return (
-    <div className="flex items-center justify-between gap-2.5">
-      {dayChips.map((day) => {
-        const isActive = recurringDays?.includes(day.value) ?? false;
+    <div>
+      <div className="grid grid-cols-4 gap-3.5 w-[550px]">
+        {dayChips.map((day) => {
+          const isActive = recurringDays?.includes(day.value) ?? false;
 
-        return (
-          <button
-            key={day.value}
-            className={`flex h-15 w-17 items-center justify-center bg-white px-3 py-1.25 text-[25px] leading-none font-medium transition-all duration-200 ${
-              isActive
-                ? "rounded-[20px] text-black"
-                : "rounded-[10px] text-black opacity-50"
-            }`}
-            onClick={() => toggleDay(day.value)}
-            type="button"
-          >
-            {day.label}
-          </button>
-        );
-      })}
+          return (
+            <button
+              key={day.value}
+              className={`flex h-25 w-30 items-center justify-center bg-white px-3 py-1.25 text-[25px] leading-none font-medium transition-all duration-200 ${
+                isActive
+                  ? "rounded-[20px] text-black"
+                  : "rounded-[15px] text-black opacity-50"
+              }`}
+              onClick={() => toggleDay(day.value)}
+              type="button"
+            >
+              {day.label}
+            </button>
+          );
+        })}
+      </div>
     </div>
   );
 
