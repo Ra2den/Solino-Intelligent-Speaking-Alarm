@@ -15,6 +15,8 @@ import { alarmsService } from "../../services/alarms.service";
 import AlarmNameRecorder from "../../services/alarm-name-recorder";
 import micIcon from "../../assets/alarm-create/mic.svg";
 import micRedIcon from "../../assets/alarm-create/mic-red.svg";
+import backIcon from "/src/assets/alarm/icon-back.svg";
+
 
 type Inputs = {
   timeDigits: string;
@@ -25,6 +27,7 @@ type Inputs = {
 type AlarmCreateProps = {
   alarm?: Partial<Alarm>;
   onCreate?: () => void;
+  onBack?: () => void;
 };
 
 const normalizeDigits = (value = "") => value.replace(/\D/g, "").slice(0, 4);
@@ -57,7 +60,7 @@ function validateTimeDigits(value = "") {
   return { valid: true };
 }
 
-export function AlarmCreate({ alarm, onCreate }: AlarmCreateProps) {
+export function AlarmCreate({ alarm, onCreate, onBack }: AlarmCreateProps) {
   const { handleSubmit, control, reset, setValue } = useForm<Inputs>({
     defaultValues: {
       timeDigits: alarm?.time?.replace(":", "") ?? "",
@@ -104,148 +107,162 @@ export function AlarmCreate({ alarm, onCreate }: AlarmCreateProps) {
         onSubmit={handleSubmit(onSubmit)}
         className="w-full h-[720px]"
       >
-        <div className="h-[720px] flex items-center justify-around">
-          {/* Time */}
-          <Controller
-            control={control}
-            name="timeDigits"
-            render={({ field }) => {
-              const digits = normalizeDigits(field.value);
-              const { time } = parseTimeDigits(digits);
-              const validation = validateTimeDigits(digits);
-              const displayTime = time;
+        <div className="flex-column items-center justify-center">
+          <button
+              onClick={onBack}
+              className="flex justify-center items-center w-25 h-30 padding-16"
+              aria-label="Zurück">
+              <img src={backIcon} alt="" className="w-10 h-10" aria-hidden="true" />
+          </button>
 
-              return (
-                <div className="flex height-full flex-col items-center justify-center gap-5">
-                  {/* Uhrzeit */}
-                  <div className="text-[75px] leading-none font-medium tracking-[-0.04em] max-md:text-[60px]">
-                    {displayTime}
-                  </div>
-                  {(!validation.valid || formError) && (
-                    <p className="px-1 text-sm font-medium text-red-600">
-                      {validation.valid ? formError : validation.error}
-                    </p>
-                  )}
-                  <div className="mt-auto flex justify-center">
-                    <button 
-                    className="rounded-full bg-white px-3.75 py-2.5 text-[20px] font-medium text-black"
-                    onClick={() => {
-                        setNumPadToggled(!numPadtoggled);
-                      }}
-                    type="button">{numPadtoggled ? "Routine wählen" : "Zeit wählen"}</button>
-                  </div>
-                </div>
-              );
-            }}
-          />
-
-
-          <div className="flex flex-col gap-3">
-            {/* NUMPAD */}
-            <div className={numPadtoggled ? "" : "hidden"}>
-              <Controller
-                  control={control}
-                  name="timeDigits"
-                  render={({ field }) => {
-                    const digits = normalizeDigits(field.value);
-                    return (
-                      <NumPad
-                        value={digits}
-                        onChange={(nextDigits) => {
-                          setFormError(""); //alten Fehler zurücksetzen, wenn sich die Eingabe ändert
-                          field.onChange(nextDigits);
-                        }}
-                        onClear={() => {
-                          setFormError("");
-                          field.onChange("");
-                        }}
-                        onConfirm={() => undefined}
-                      />
-                    );
-                  }}
-                />
-              </div>
-            
-            {/* WEEKDAYS */}
-            <div className={numPadtoggled ? "hidden" : "flex gap-3 flex-col"}>
-              {/* Weekday */}
+          <div className="flex flex-row h-[400px] items-center justify-around">
+            {/* Time */}
+            <div className="w-[640px]">
               <Controller
                 control={control}
-                name="recurring_days"
-                render={({ field }) => (
-                  <div>
-                    <WeekdayChips
-                      recurringDays={field.value}
-                      onChange={field.onChange}
-                    />
-                  </div>
-                )}
+                name="timeDigits"
+                render={({ field }) => {
+                  const digits = normalizeDigits(field.value);
+                  const { time } = parseTimeDigits(digits);
+                  const validation = validateTimeDigits(digits);
+                  const displayTime = time;
+
+                  return (
+                    <div className="flex height-full flex-col items-center justify-center gap-5">
+                      {/* Uhrzeit */}
+                      <div className="text-[75px] leading-none font-medium tracking-[-0.04em] max-md:text-[60px]">
+                        {displayTime}
+                      </div>
+                      {(!validation.valid || formError) && (
+                        <p className="px-1 text-sm font-medium text-red-600">
+                          {validation.valid ? formError : validation.error}
+                        </p>
+                      )}
+                      <div className="mt-auto flex justify-center">
+                        <button 
+                          className="rounded-full bg-white px-3.75 py-2.5 text-[20px] font-medium text-black"
+                          onClick={() => {
+                              setNumPadToggled(!numPadtoggled);
+                            }}
+                          type="button">{numPadtoggled ? "Routine wählen" : "Zeit wählen"}
+                        </button>
+                      </div>
+                    </div>
+                  );
+                }}
               />
-              <div className="flex flex-col gap-1">
-                {/* <SettingsRow
-                  icon={pauseIcon}
-                  label="Schlummern"
-                  topRounded={true}
-                  trailing={plusIcon}
-                /> */}
+            </div>
+
+            
+            <div className="w-[640px]">
+              
+              {/* NUMPAD */}
+              <div className={numPadtoggled ? "" : "hidden"}>
+                <Controller
+                    control={control}
+                    name="timeDigits"
+                    render={({ field }) => {
+                      const digits = normalizeDigits(field.value);
+                      return (
+                        <NumPad
+                          value={digits}
+                          onChange={(nextDigits) => {
+                            setFormError(""); //alten Fehler zurücksetzen, wenn sich die Eingabe ändert
+                            field.onChange(nextDigits);
+                          }}
+                          onClear={() => {
+                            setFormError("");
+                            field.onChange("");
+                          }}
+                          onConfirm={() => undefined}
+                        />
+                      );
+                    }}
+                  />
+                </div>
+              
+              {/* WEEKDAYS */}
+              <div className={numPadtoggled ? "hidden" : "flex flex-col items-center justify-center gap-3"}>
+                {/* Weekday */}
                 <Controller
                   control={control}
-                  name="label"
+                  name="recurring_days"
                   render={({ field }) => (
-                    <div className="flex gap-3">
-                      {isListening && (
-                        <SettingsRow icon={tagIcon} label={"Hört zu..."} />
-                      )}
-                      {isProcessing && (
-                        <SettingsRow icon={tagIcon} label={"Verarbeite..."} />
-                      )}
-                      {!isListening && !isProcessing && (
-                        <SettingsRow icon={tagIcon} label={field.value} />
-                      )}
-                      <button
-                        type="button"
-                        className={`flex w-16 items-center justify-center bg-white/85 p-3.75 text-black rounded-[5px] ${isListening ? "mix-blend-normal" : "mix-blend-soft-light"} ${isProcessing ? "cursor-wait opacity-70" : ""}`}
-                        onClick={() => {
-                          handleButtonClick();
-                        }}
-                        disabled={isProcessing}
-                        aria-label={
-                          isListening
-                            ? "Aufnahme des Alarmnamens stoppen"
-                            : isProcessing
-                            ? "Alarmname wird verarbeitet"
-                            : "Aufnahme des Alarmnamens starten"
-                        }
-                      >
-                        {!isListening ? (
-                          <img
-                            src={micIcon}
-                            alt=""
-                            className="h-7.5 w-7.5 shrink-0"
-                            aria-hidden="true"
-                          />
-                        ) : (
-                          <img
-                            src={micRedIcon}
-                            alt=""
-                            className="h-7.5 w-7.5 shrink-0"
-                            aria-hidden="true"
-                          />
-                        )}
-                      </button>
+                    <div>
+                      <WeekdayChips
+                        recurringDays={field.value}
+                        onChange={field.onChange}
+                      />
                     </div>
                   )}
                 />
-                {error && (
-                  <p className="px-1 text-sm font-medium text-red-600">{error}</p>
-                )}
-                {/* <SettingsRow icon={bellIcon} label="Ton" bottomRounded={true} /> */}
+                <div className="flex flex-col gap-1">
+                  {/* <SettingsRow
+                    icon={pauseIcon}
+                    label="Schlummern"
+                    topRounded={true}
+                    trailing={plusIcon}
+                  /> */}
+                  <Controller
+                    control={control}
+                    name="label"
+                    render={({ field }) => (
+                      <div className="flex gap-3">
+                        {isListening && (
+                          <SettingsRow icon={tagIcon} label={"Hört zu..."} />
+                        )}
+                        {isProcessing && (
+                          <SettingsRow icon={tagIcon} label={"Verarbeite..."} />
+                        )}
+                        {!isListening && !isProcessing && (
+                          <SettingsRow icon={tagIcon} label={field.value} />
+                        )}
+                        <button
+                          type="button"
+                          className={`flex w-16 items-center justify-center bg-white/85 p-3.75 text-black rounded-[5px] ${isListening ? "mix-blend-normal" : "mix-blend-soft-light"} ${isProcessing ? "cursor-wait opacity-70" : ""}`}
+                          onClick={() => {
+                            handleButtonClick();
+                          }}
+                          disabled={isProcessing}
+                          aria-label={
+                            isListening
+                              ? "Aufnahme des Alarmnamens stoppen"
+                              : isProcessing
+                              ? "Alarmname wird verarbeitet"
+                              : "Aufnahme des Alarmnamens starten"
+                          }
+                        >
+                          {!isListening ? (
+                            <img
+                              src={micIcon}
+                              alt=""
+                              className="h-7.5 w-7.5 shrink-0"
+                              aria-hidden="true"
+                            />
+                          ) : (
+                            <img
+                              src={micRedIcon}
+                              alt=""
+                              className="h-7.5 w-7.5 shrink-0"
+                              aria-hidden="true"
+                            />
+                          )}
+                        </button>
+                      </div>
+                    )}
+                  />
+                  {error && (
+                    <p className="px-1 text-sm font-medium text-red-600">{error}</p>
+                  )}
+                  {/* <SettingsRow icon={bellIcon} label="Ton" bottomRounded={true} /> */}
+                </div>
               </div>
             </div>
-            <div className="relative z-10 mt-auto flex justify-center pt-12.5">
-              <ActionPill type="submit">Speichern</ActionPill>
-            </div>
           </div>
+
+          <div className="relative z-10 mt-auto flex justify-center pt-12.5">
+                <ActionPill type="submit">Speichern</ActionPill>
+            </div>
         </div>
       </form>
     </>

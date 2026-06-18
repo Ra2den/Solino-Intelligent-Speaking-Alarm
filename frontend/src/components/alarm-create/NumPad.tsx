@@ -48,7 +48,7 @@ export function NumPad({ value = '', onChange, onConfirm, onClear }: NumPadProps
           <button
             key={key}
             type="button"
-            className="flex h-15 w-17 items-center justify-center bg-white px-3 py-1.25 text-[25px] leading-none font-medium opacity-50 rounded-[15px] text-black"
+            className="flex h-25 w-30 items-center justify-center bg-white px-3 py-1.25 text-[25px] leading-none font-medium opacity-50 rounded-[15px] text-black"
             onClick={() => handlePress(key)}
           >
             {key}
@@ -56,7 +56,7 @@ export function NumPad({ value = '', onChange, onConfirm, onClear }: NumPadProps
         ))}
         <button
           type="button"
-          className="flex h-15 w-17 items-center justify-center bg-white px-3 py-1.25 text-[20px] leading-none font-medium opacity-50 rounded-[15px] text-black"
+          className="flex h-25 w-30 items-center justify-center bg-white px-3 py-1.25 text-[20px] leading-none font-medium opacity-50 rounded-[15px] text-black"
           onClick={() => {
             setDisplayValue('');
             onClear?.();
@@ -66,7 +66,7 @@ export function NumPad({ value = '', onChange, onConfirm, onClear }: NumPadProps
         </button>
         <button
           type="button"
-          className="flex h-15 w-17 items-center justify-center bg-white px-3 py-1.25 text-[20px] leading-none font-medium opacity-50 rounded-[15px] text-black"
+          className="flex h-25 w-30 items-center justify-center bg-white px-3 py-1.25 text-[20px] leading-none font-medium opacity-50 rounded-[15px] text-black"
           onClick={onConfirm}
         >
           OK

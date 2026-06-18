@@ -30,7 +30,7 @@ export function HomeScreen() {
   return (
     <>
       {isCreate ? (
-        <AlarmCreate onCreate={() => setIsCreate(false)} />
+        <AlarmCreate onCreate={() => setIsCreate(false)} onBack={() => setIsCreate(false)} />
       ) : (
         <div className="w-full h-full overflow-hidden grid grid-cols-5 p-12 gap-6">
           {/* Widgets */}
