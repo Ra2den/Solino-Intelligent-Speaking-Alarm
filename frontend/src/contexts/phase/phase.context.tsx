@@ -1,10 +1,6 @@
-import {
-  useEffect,
-  useState,
-  type ReactNode,
-} from "react";
-import type { Phase } from "../models/simulator/phase.model.js";
-import { getNextTransition, getPhase } from "../utils/phase.util.js";
+import { useEffect, useState, type ReactNode } from "react";
+import type { Phase } from "../../models/simulator/phase.model.js";
+import { getNextTransition, getPhase } from "../../utils/phase.util.js";
 import { PhaseContext } from "./phase-context";
 
 type PhaseProviderProps = {

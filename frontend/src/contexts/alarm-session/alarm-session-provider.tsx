@@ -1,9 +1,9 @@
 import { type ReactNode, useMemo } from "react";
-import { useAlarmSessionWebSocket } from "../hooks/useAlarmSessionWebSocket";
-import { alarmSessionService } from "../services/alarm-session.service";
+import { useAlarmSessionWebSocket } from "../../hooks/useAlarmSessionWebSocket";
+import { alarmSessionService } from "../../services/alarm-session.service";
 import { AlarmSessionContext } from "./alarm-session.context";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { AlarmSessionStatusSchema } from "../models/alarm-session.model";
+import { AlarmSessionStatusSchema } from "../../models/alarm-session.model";
 
 type AlarmSessionProviderProps = {
   client: ReturnType<typeof useQueryClient>;

@@ -1,5 +1,5 @@
 import operator
-from typing import Annotated, TypedDict
+from typing import Annotated, TypedDict, Callable
 from langchain_ollama import ChatOllama  
 from langchain_core.messages import BaseMessage, HumanMessage, AIMessage
 from langchain_core.tools import tool
@@ -16,7 +16,14 @@ import shutil
 import requests
 import logging
 
+from omnivoice import OmniVoice
+import soundfile as sf
+import torch
+
+from domain.assistant.utils import trigger_backend_state
 import domain.alarms.service as alarm_service
+from domain.assistant.schemas import AiState
+from domain.assistant.state_manager import update_ai_state
 from domain.assistant.speech_to_text import STTService
 from domain.weather.service import (
     get_current_weather,
@@ -40,6 +47,9 @@ AUDIO_DIR = ASSETS_DIR / "audio"
 RESPONSE_WAV_PATH = AUDIO_DIR / "response.wav"
 
 AUDIO_DIR.mkdir(parents=True, exist_ok=True) 
+
+filename = "user_input.wav" #set voice cloning file name here, put given file in /backend/assets/audio
+INPUT_AUDIO_PATH = AUDIO_DIR / filename
 
 system_message = SystemMessage(
     content="""
@@ -198,6 +208,21 @@ model = ChatOllama(
     temperature=0,
 ).bind_tools(tools)
 
+# Dynamically resolve PyTorch compute device
+device = "cpu"
+if torch.cuda.is_available():
+    device = "cuda"
+elif hasattr(torch.backends, "mps") and torch.backends.mps.is_available():
+    device = "mps"
+
+print(f"Lade OmniVoice Modell auf Gerät: {device}...")
+tts_model = OmniVoice.from_pretrained(
+    "k2-fsa/OmniVoice",
+    device_map=device,
+    # CPU does not support half-precision float16 for many common operations
+    dtype=torch.float16 if device != "cpu" else torch.float32   
+)
+
 class AgentState(TypedDict):
     messages: Annotated[list[BaseMessage], operator.add]
 
@@ -234,27 +259,47 @@ app = workflow.compile(checkpointer=memory)
 
 config = {"configurable": {"thread_id": "haupt_user_session"}}
 
-def speak(text):
+def speak(text, input_text, on_play_audio_file: Callable[[], None] = None):
     voice_setting = settings_service.get_voice()
     #print(f"Generiere Audio für: {text}...")
     # 'aplay' ist der Standard-Player auf Linux (pw-play funktioniert aber besser), 'afplay' auf Mac
-    if voice_setting == VoiceOption.MALE:
-        model_path = MODELS_DIR / "de_DE-thorsten-high.onnx"
-    elif voice_setting == VoiceOption.FEMALE:
-        model_path = MODELS_DIR / "de_DE-kerstin-low.onnx"
+    if not INPUT_AUDIO_PATH.exists():
+        print(f"WARNUNG: Klon-Audiodatei '{INPUT_AUDIO_PATH}' wurde nicht gefunden. Verwende Piper fallback...")
+        if voice_setting == VoiceOption.MALE:
+            model_path = MODELS_DIR / "de_DE-thorsten-high.onnx"
+        elif voice_setting == VoiceOption.FEMALE:
+            model_path = MODELS_DIR / "de_DE-kerstin-low.onnx"
+        else:
+            model_path = MODELS_DIR / "de_DE-thorsten-high.onnx"
 
-    subprocess.run(
-        [
-            "piper",
-            "--model",
-            str(model_path),
-            "--output_file",
-            str(RESPONSE_WAV_PATH),
-        ],
-        input=text,
-        text=True,
-        check=True,
-    )
+        subprocess.run(
+            [
+                "piper",
+                "--model",
+                str(model_path),
+                "--output_file",
+                str(RESPONSE_WAV_PATH),
+            ],
+            input=text,
+            text=True,
+            check=True,
+        )
+    else:
+        ref_waveform, ref_sr = sf.read(INPUT_AUDIO_PATH)
+
+        print("Generiere Audio (Voice Clone)...")
+        audio = tts_model.generate(
+            text=text,
+            ref_audio=(ref_waveform, ref_sr),
+            ref_text=input_text, 
+        )
+
+        sf.write(RESPONSE_WAV_PATH, audio[0], 24000)
+
+    print(f"Fertig! Audio wurde erfolgreich als '{RESPONSE_WAV_PATH}' gespeichert!")
+
+    if on_play_audio_file:
+        on_play_audio_file()
     _play_audio_file(RESPONSE_WAV_PATH)
 
 
@@ -314,7 +359,6 @@ def wake_up(time, alarm_label=""):
     return
 
 def interact():
-
     # --- SCHRITT 1: Aufnahme ---
     audio_file = stt_service.record_audio(duration=6)
             
@@ -325,21 +369,26 @@ def interact():
     # --- SCHRITT 3: Verarbeitung ---
     if user_text.strip():
         inputs = {"messages": [HumanMessage(content=user_text)]}
-        final_response = ""
-                
-        print("Susonne überlegt...")
-
         config = {"configurable": {"thread_id": "User"}}
 
-        ai_output(inputs=inputs, config=config)
-                
-        
+        # Das HTTP-Update wird jetzt autonom von ai_output geregelt
+        ai_output(inputs=inputs, config=config, input_text=user_text)
     else:
         print("Ich habe nichts gehört. Bitte versuch es nochmal.")
+        trigger_backend_state(AiState.IDLE)
 
-def ai_output(inputs, config):
 
-    for output in app.stream(inputs, config=config, stream_mode="values"):
+def ai_output(inputs, config, input_text):
+
+    print(f"INPUTS ??? : {inputs}")
+
+    # 1. Per HTTP an FastAPI: Susonne überlegt!
+    print("Zustand geändert: thinking")
+    trigger_backend_state(AiState.THINKING)
+
+    final_response = ""
+    try:
+        for output in app.stream(inputs, config=config, stream_mode="values"):
             if "messages" in output and output["messages"]:
                 last_msg = output["messages"][-1]
                         
@@ -347,14 +396,23 @@ def ai_output(inputs, config):
                 final_response = last_msg.content
 
         # --- SCHRITT 4: Antwort ausgeben & Sprechen ---
-    if final_response:
-        print(f"Susonne: {final_response}")
-        speak(final_response)
-    else:
-        print("Keine Antwort von Susonne erhalten.")
-    
-    return
-    
+        if final_response:
+            print(f"Susonne: {final_response}")
+            
+            def on_speak_start():
+                print("Zustand geändert: speaking")
+                trigger_backend_state(AiState.SPEAKING)
+            
+            speak(final_response,  input_text=input_text, on_play_audio_file=on_speak_start)
+        else:
+            print("Keine Antwort von Susonne erhalten.")
+
+    except Exception as e:
+        print(f"Fehler bei der KI-Verarbeitung: {e}")
+
+    finally:
+        print("Zustand geändert: idle")
+        trigger_backend_state(AiState.IDLE)    
 if __name__ == '__main__':
    pass
    #wake_up("8:20","Uni")
