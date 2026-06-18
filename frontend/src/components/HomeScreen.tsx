@@ -103,7 +103,7 @@ export function HomeScreen() {
         <div className="col-span-2 min-h-0 grid grid-rows-8 h-full">
           {isListView ? (
             <div className="row-span-8">
-              <AlarmList onBack={() => setIsListView(false)} />
+              <AlarmList onBack={() => setIsListView(false)} onCreate={() => setIsCreate(true)}/>
             </div>
           ) : (
             <Widgets />
