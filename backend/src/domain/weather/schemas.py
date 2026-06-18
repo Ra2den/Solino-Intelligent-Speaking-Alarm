@@ -10,7 +10,7 @@ class WeatherCondition(str,Enum):
     Clouds = 'Clouds'
 
 class WeatherNowcast(BaseModel):
-    time: str
+    time: datetime
     temperature: float
     feels_like: float
     weather_condition: WeatherCondition
@@ -20,7 +20,7 @@ class WeatherForecast(BaseModel):
     forecast: list[WeatherNowcast]
 
 class Sunrise(BaseModel):
-    time: str
+    time: datetime
 
 class Sunset(BaseModel):
-    time: str
+    time: datetime

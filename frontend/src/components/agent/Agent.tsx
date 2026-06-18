@@ -24,7 +24,11 @@ const RAIN_DROP_POSITIONS = [
   "absolute -bottom-9 left-[73%] z-0 w-[20%]",
 ] as const;
 
-export function Agent() {
+type AgentProps = {
+  isGuard?: boolean;
+};
+
+export function Agent({ isGuard = false }: AgentProps) {
   const { data: weatherData, isLoading, error } = useWeatherNowcast();
   const phase = usePhase();
 
@@ -115,7 +119,7 @@ export function Agent() {
             src={phase === PhaseSchema.parse("Night") ? molinoBase : solinoBase}
             alt="Solino Base"
           />
-          {getExpression(false, phase)}
+          {getExpression(isGuard, phase)}
         </div>
       </div>
     </>

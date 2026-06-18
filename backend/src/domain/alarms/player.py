@@ -4,6 +4,7 @@ import subprocess
 import threading
 import time
 from pathlib import Path
+import domain.settings.service as settings_service
 
 
 BACKEND_ROOT = Path(__file__).resolve().parents[3]
@@ -20,10 +21,10 @@ def _find_audio_file() -> Path:
 
 
 def _find_player() -> str:
-    for candidate in ("afplay", "aplay"):
+    for candidate in ("afplay", "pw-play", "aplay"):
         if shutil.which(candidate):
             return candidate
-    raise RuntimeError("No supported audio player found. Expected 'afplay' or 'aplay'.")
+    raise RuntimeError("No supported audio player found. Expected 'afplay', 'pw-play' or 'aplay'.")
 
 
 class AlarmPlayer:
@@ -79,10 +80,17 @@ class AlarmPlayer:
     def _loop_playback(self) -> None:
         audio_path = _find_audio_file()
         player = _find_player()
-
+        volume_percent = settings_service.get_volume_percent()
+        
+         # Construct the base command
+        command = [player]
+        
+        # Append player-specific volume flags
+        self.set_volume(command, volume_percent, audio_path, player)
+        
         try:
             while not self._stop_event.is_set():
-                process = subprocess.Popen([player, str(audio_path)])
+                process = subprocess.Popen(command)
                 with self._lock:
                     self._process = process
 
@@ -102,5 +110,20 @@ class AlarmPlayer:
                     self._thread = None
                     self._session_id = None
 
+    def set_volume(self, command, volume_percent: int, audio_path, player):
+        # Convert 0-100 to 0.0-1.0
+        volume_decimal = max(0, min(100, volume_percent)) / 100.0
+        
+        # Append player-specific volume flags
+        if player == "afplay":
+            command.extend(["-v", str(volume_decimal)])
+        elif player == "pw-play":
+            # Note: pw-play might require a comma instead of a period depending on locale, 
+            # but usually str() with period works fine.
+            command.extend(["--volume", str(volume_decimal)])
+        # Note: 'aplay' does not have a direct volume flag. It will just ignore this logic 
+        # and play at the system volume.
 
+        command.append(str(audio_path))  
+        
 alarm_player = AlarmPlayer()

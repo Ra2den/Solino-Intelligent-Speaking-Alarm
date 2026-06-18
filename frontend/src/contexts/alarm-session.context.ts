@@ -4,8 +4,10 @@ import { type AlarmSession } from "../models/alarm-session.model";
 type AlarmSessionContextValue = {
   currentAlarmSession: AlarmSession | null;
   isRinging: boolean;
+  isGuard: boolean;
   stopAlarm: () => Promise<void>;
   snoozeAlarm: () => Promise<void>;
+  togglePressureSensor: (isPressed: boolean) => Promise<void>;
   isLoading: boolean;
 };
 

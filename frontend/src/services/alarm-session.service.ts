@@ -35,6 +35,22 @@ class AlarmSessionService {
       throw err;
     }
   }
+
+  async triggerPressureSensor(
+    sessionId: number,
+    isPressed: boolean,
+  ): Promise<AlarmSession> {
+    try {
+      return await apiClient.post(`${this.baseUrl}/${sessionId}/pressure`, {
+        is_pressed: isPressed,
+      });
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        console.error("alarmSession.triggerPressureSensor error:", err.message);
+      }
+      throw err;
+    }
+  }
 }
 
 export const alarmSessionService = new AlarmSessionService();

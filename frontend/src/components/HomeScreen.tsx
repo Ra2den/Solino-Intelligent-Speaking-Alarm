@@ -10,20 +10,63 @@ import settingsIcon from "/src/assets/alarm/icon-settingsBtn.svg";
 import { AlarmList } from "./alarm/AlarmList";
 import { useAlarmSession } from "../contexts/alarm-session.context";
 import { AlarmRingingScreen } from "./AlarmRingingScreen";
+import { AlarmGuardScreen } from "./AlarmGuardScreen";
+import SettingsScreen from "./SettingsScreen";
 
 export function HomeScreen() {
   const [isCreate, setIsCreate] = useState(false);
   const [isListView, setIsListView] = useState(false);
-  const { isRinging, currentAlarmSession, stopAlarm, snoozeAlarm } =
-    useAlarmSession();
+  const {
+    isRinging,
+    isGuard,
+    currentAlarmSession,
+    stopAlarm,
+    snoozeAlarm,
+    togglePressureSensor,
+  } = useAlarmSession();
+
+  const [isSettingsView, setIsSettingsView] = useState(false);
 
   if (isRinging && currentAlarmSession) {
     return (
-      <AlarmRingingScreen
-        session={currentAlarmSession}
-        onStop={stopAlarm}
-        onSnooze={() => snoozeAlarm()}
-      />
+      <div className="w-full h-full overflow-hidden grid grid-cols-5 p-12 gap-6">
+        {/* Alarm-Ringing Widget */}
+        <div className="col-span-2 h-full">
+          <AlarmRingingScreen
+            session={currentAlarmSession}
+            onStop={stopAlarm}
+            onSnooze={() => snoozeAlarm()}
+          />
+        </div>
+        <div className="col-span-3">
+          <Agent />
+        </div>
+      </div>
+    );
+  }
+
+  if (isGuard && currentAlarmSession) {
+    return (
+      <div className="w-full h-full overflow-hidden grid grid-cols-5 p-12 gap-6">
+        {/* Guard mode widget */}
+        <div className="col-span-2 h-full">
+          <AlarmGuardScreen
+            session={currentAlarmSession}
+            onPressureStart={togglePressureSensor}
+          />
+        </div>
+        <div className="col-span-3">
+          <Agent isGuard />
+        </div>
+      </div>
+    );
+  }
+
+  if (isSettingsView) {
+    return (
+      <div className="w-full h-full p-12">
+        <SettingsScreen onBack={() => setIsSettingsView(false)} />
+      </div>
     );
   }
 
@@ -71,7 +114,11 @@ export function HomeScreen() {
             label="Wecker hinzufügen"
             iconSrc={alarmAddIcon}
           />
-          <Button label="Einstellungen" iconSrc={settingsIcon} />
+          <Button
+            onClick={() => setIsSettingsView(true)}
+            label="Einstellungen"
+            iconSrc={settingsIcon}
+          />
         </div>
         <div className="row-span-3">
           <AlarmWidget></AlarmWidget>

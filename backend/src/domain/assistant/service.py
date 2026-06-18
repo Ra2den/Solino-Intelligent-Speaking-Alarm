@@ -13,6 +13,8 @@ import json
 import subprocess
 from pathlib import Path
 import shutil
+import requests
+import logging
 
 import domain.alarms.service as alarm_service
 from domain.assistant.speech_to_text import STTService
@@ -25,21 +27,19 @@ from domain.news.service import (
     get_full_news_from_headline_id, 
     search_news
 )
+from domain.settings import service as settings_service
+from domain.settings.schemas import VoiceOption
+
+logger = logging.getLogger(__name__)
+OLLAMA_BASE_URL = "http://localhost:11434"
 
 BACKEND_ROOT = Path(__file__).resolve().parents[3]
 ASSETS_DIR = BACKEND_ROOT / "assets"
 MODELS_DIR = ASSETS_DIR / "models"
 AUDIO_DIR = ASSETS_DIR / "audio"
-SETTINGS_PATH = BACKEND_ROOT / "settings.json"
 RESPONSE_WAV_PATH = AUDIO_DIR / "response.wav"
 
-AUDIO_DIR.mkdir(parents=True, exist_ok=True)
-
-with SETTINGS_PATH.open("r") as file:
-    settings = json.load(file)
-if settings:
-    speaker = settings["speaker"]
-
+AUDIO_DIR.mkdir(parents=True, exist_ok=True) 
 
 system_message = SystemMessage(
     content="""
@@ -235,11 +235,12 @@ app = workflow.compile(checkpointer=memory)
 config = {"configurable": {"thread_id": "haupt_user_session"}}
 
 def speak(text):
+    voice_setting = settings_service.get_voice()
     #print(f"Generiere Audio für: {text}...")
     # 'aplay' ist der Standard-Player auf Linux (pw-play funktioniert aber besser), 'afplay' auf Mac
-    if speaker == "male":
+    if voice_setting == VoiceOption.MALE:
         model_path = MODELS_DIR / "de_DE-thorsten-high.onnx"
-    else:
+    elif voice_setting == VoiceOption.FEMALE:
         model_path = MODELS_DIR / "de_DE-kerstin-low.onnx"
 
     subprocess.run(
@@ -258,9 +259,9 @@ def speak(text):
 
 
 def _play_audio_file(audio_path):
-    player = shutil.which("afplay") or shutil.which("aplay")
+    player = shutil.which("afplay") or shutil.which("pw-play") or shutil.which("aplay")
     if not player:
-        raise RuntimeError("Kein Audio-Player gefunden. Erwartet wurde 'afplay' oder 'aplay'.")
+        raise RuntimeError("Kein Audio-Player gefunden. Erwartet wurde 'afplay', 'pw-play' oder 'apaly'.")
 
     completed = subprocess.run(
         [player, str(audio_path)],
@@ -274,6 +275,18 @@ def _play_audio_file(audio_path):
             f"Audio konnte nicht abgespielt werden: {audio_path}. "
             f"Player: {player}. Fehler: {error_output or 'Unbekannter Fehler'}"
         )
+
+def is_ollama_available():
+    """Check if Ollama service is available and accessible."""
+    try:
+        timeout_sec = settings_service.get_ollama_health_check_timeout_sec()
+        response = requests.get(
+            f"{OLLAMA_BASE_URL}/api/tags",
+            timeout=timeout_sec
+        )
+        return response.status_code == 200
+    except (requests.ConnectionError, requests.Timeout, Exception):
+        return False
 
 def wake_up(time, alarm_label=""):
     print(f"!!! ALARM !!! Es ist {time} Uhr!")
