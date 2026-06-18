@@ -7,8 +7,10 @@ type AlarmCardProps = {
   alarm?: Alarm;
   isWidget?: boolean;
   onToggle?: () => void;
+  onEdit?: () => void;
+  onDelete?: () => void;
 };
-export function AlarmCard({ alarm, isWidget, onToggle }: AlarmCardProps) {
+export function AlarmCard({ alarm, isWidget, onToggle, onEdit, onDelete }: AlarmCardProps) {
   const isRecurring = alarm?.recurring_days !== null;
   return (
     <div
@@ -65,6 +67,26 @@ export function AlarmCard({ alarm, isWidget, onToggle }: AlarmCardProps) {
               <RecurringDays
                 recurring_days={alarm?.recurring_days}
               ></RecurringDays>
+            )}
+
+            {/* Zeile 4: Edit/Delete */}
+            {!isWidget && (
+              <div className="flex items-center justify-between w-full mt-2">
+                <button
+                  onClick={() => onEdit?.()}
+                  className="text-white text-[24px] font-medium"
+                  aria-label="Wecker bearbeiten"
+                >
+                  Bearbeiten
+                </button>
+                <button
+                  onClick={() => onDelete?.()}
+                  className="text-white text-[24px] font-medium"
+                  aria-label="Wecker löschen"
+                >
+                  Löschen
+                </button>
+              </div>
             )}
           </>
         )}

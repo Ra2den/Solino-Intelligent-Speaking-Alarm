@@ -3,6 +3,7 @@ import { Agent } from "./agent/Agent";
 import TimeWidget from "./TimeWidget";
 import AlarmCreate from "./alarm-create/AlarmCreate";
 import { useState, useEffect } from "react";
+import type { Alarm } from "../models/alarm/alarm.model";
 import { Button } from "./buttons/Button";
 import alarmListIcon from "/src/assets/alarm/icon-alarmListBtn.svg";
 import alarmAddIcon from "/src/assets/alarm/icon-alarmAddBtn.svg";
@@ -22,6 +23,7 @@ import { LoadingScreen } from "./LoadingScreen";
 export function HomeScreen() {
   const [isCreate, setIsCreate] = useState(false);
   const [isListView, setIsListView] = useState(false);
+  const [alarmToEdit, setAlarmToEdit] = useState<Alarm>();
   const {
     isRinging,
     isGuard,
@@ -96,14 +98,31 @@ export function HomeScreen() {
     }
 
     return isCreate ? (
-      <AlarmCreate onCreate={() => setIsCreate(false)} />
+      <AlarmCreate
+        alarm={alarmToEdit}
+        onCreate={() => {
+          setIsCreate(false);
+          setAlarmToEdit(undefined);
+        }}
+      />
     ) : (
       <div className="w-full h-full overflow-hidden grid grid-cols-5 p-12 gap-6">
         {/* Widgets */}
         <div className="col-span-2 min-h-0 grid grid-rows-8 h-full">
           {isListView ? (
             <div className="row-span-8">
-              <AlarmList onBack={() => setIsListView(false)} onCreate={() => setIsCreate(true)}/>
+              <AlarmList
+                onBack={() => setIsListView(false)}
+                onCreate={() => {
+                  setAlarmToEdit(undefined);
+                  setIsCreate(true);
+                }}
+                onEdit={(alarm) => {
+                  setAlarmToEdit(alarm);
+                  setIsCreate(true);
+                  setIsListView(false);
+                }}
+              />
             </div>
           ) : (
             <Widgets />
@@ -157,7 +176,15 @@ export function HomeScreen() {
           />
         </div>
         <div className="row-span-3">
-          <AlarmWidget></AlarmWidget>
+          <AlarmWidget
+            onEdit={(alarm) => {
+              setAlarmToEdit(alarm);
+              setIsCreate(true);
+            }}
+            onDelete={() => {
+              setAlarmToEdit(undefined);
+            }}
+          />
         </div>
       </>
     );

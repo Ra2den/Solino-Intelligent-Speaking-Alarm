@@ -8,9 +8,11 @@ import alarmAddIcon from "../../assets/alarm/icon-alarmAddBtn.svg";
 type AlarmListProps = {
   onBack: () => void;
   onCreate?: () => void;
+  onEdit?: (alarm: Alarm) => void;
+  onDelete?: (alarmId: number) => void;
 };
 
-export function AlarmList({ onBack, onCreate }: AlarmListProps) {
+export function AlarmList({ onBack, onCreate, onEdit, onDelete }: AlarmListProps) {
   const [alarms, setAlarms] = useState<Alarm[]>([]);
 
   useEffect(() => {
@@ -58,6 +60,8 @@ export function AlarmList({ onBack, onCreate }: AlarmListProps) {
                 alarm={alarm}
                 isWidget={false}
                 onToggle={() => handleToggleAlarm(alarm.id)}
+                onEdit={() => onEdit?.(alarm)}
+                onDelete={() => handleDeleteAlarm(alarm.id)}
               />
             </div>
           ))
@@ -74,5 +78,19 @@ export function AlarmList({ onBack, onCreate }: AlarmListProps) {
         alarm.id === alarmId ? updatedAlarm : alarm,
       ),
     );
+  }
+
+  async function handleDeleteAlarm(alarmId: number) {
+    try {
+      await alarmsService.deleteAlarm(alarmId);
+      setAlarms((currentAlarms) =>
+        currentAlarms.filter((alarm) => alarm.id !== alarmId),
+      );
+      onDelete?.(alarmId);
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        console.error("alarms.deleteAlarm error:", err.message);
+      }
+    }
   }
 }
