@@ -57,7 +57,7 @@ function validateTimeDigits(value = "") {
 }
 
 export function AlarmCreate({ alarm, onCreate, onBack }: AlarmCreateProps) {
-  const { handleSubmit, control, reset, setValue } = useForm<Inputs>({
+  const { handleSubmit, control, reset, setValue, getValues } = useForm<Inputs>({
     defaultValues: {
       timeDigits: alarm?.time?.replace(":", "") ?? "0700",
       recurring_days: alarm?.recurring_days ?? null,
@@ -120,7 +120,13 @@ export function AlarmCreate({ alarm, onCreate, onBack }: AlarmCreateProps) {
               type="button"
               onClick={(e) => {
                 e.preventDefault();
-                setNumPadToggled(false);
+                const digits = normalizeDigits(getValues("timeDigits"));
+                const validation = validateTimeDigits(digits);
+                if (validation.valid) {
+                  setNumPadToggled(false);
+                } else {
+                  setFormError(validation.error || "Ungültige Uhrzeit");
+                }
               }}
               className="flex justify-center items-center bg-white text-black px-10 py-5 rounded-[30px] font-bold text-2xl shadow-lg hover:bg-gray-100 transition-colors"
             >
