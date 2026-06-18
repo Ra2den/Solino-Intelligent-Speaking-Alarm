@@ -43,13 +43,12 @@ export function NumPad({ value = '', onChange, onConfirm, onClear }: NumPadProps
 
   return (
     <div className="num-pad">
-      <div className="num-pad__display">{displayValue}</div>
       <div className="grid grid-cols-3 gap-2.5 font-medium text-black hover:bg-gray-200">
         {keys.map((key) => (
           <button
             key={key}
             type="button"
-            className="flex h-15 w-17 items-center justify-center bg-white px-3 py-1.25 text-[25px] rounded-[10px]"
+            className="flex h-15 w-17 items-center justify-center bg-white px-3 py-1.25 text-[25px] leading-none font-medium opacity-50 rounded-[15px] text-black"
             onClick={() => handlePress(key)}
           >
             {key}
@@ -57,7 +56,7 @@ export function NumPad({ value = '', onChange, onConfirm, onClear }: NumPadProps
         ))}
         <button
           type="button"
-          className="flex h-15 w-17 items-center justify-center bg-white px-3 py-1.25 text-[20px] rounded-[10px]"
+          className="flex h-15 w-17 items-center justify-center bg-white px-3 py-1.25 text-[20px] leading-none font-medium opacity-50 rounded-[15px] text-black"
           onClick={() => {
             setDisplayValue('');
             onClear?.();
@@ -67,7 +66,7 @@ export function NumPad({ value = '', onChange, onConfirm, onClear }: NumPadProps
         </button>
         <button
           type="button"
-          className="flex h-15 w-17 items-center justify-center bg-white px-3 py-1.25 text-[20px] rounded-[10px]"
+          className="flex h-15 w-17 items-center justify-center bg-white px-3 py-1.25 text-[20px] leading-none font-medium opacity-50 rounded-[15px] text-black"
           onClick={onConfirm}
         >
           OK

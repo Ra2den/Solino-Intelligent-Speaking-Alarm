@@ -17,9 +17,7 @@ import micIcon from "../../assets/alarm-create/mic.svg";
 import micRedIcon from "../../assets/alarm-create/mic-red.svg";
 
 type Inputs = {
-  time: string;
-  hours: number | string;
-  minutes: number | string;
+  timeDigits: string;
   recurring_days: WeekdayArray;
   label: string;
 };
@@ -29,12 +27,40 @@ type AlarmCreateProps = {
   onCreate?: () => void;
 };
 
+const normalizeDigits = (value = "") => value.replace(/\D/g, "").slice(0, 4);
+
+const padTimeDigits = (value = "") => normalizeDigits(value).padEnd(4, "0");
+
+function parseTimeDigits(value = "") {
+  const padded = padTimeDigits(value);
+  const hours = Number(padded.slice(0, 2));
+  const minutes = Number(padded.slice(2, 4));
+
+  return {
+    hours,
+    minutes,
+    time: `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}`,
+  };
+}
+
+function validateTimeDigits(value = "") {
+  const { hours, minutes } = parseTimeDigits(value);
+
+  if (hours < 0 || hours > 23) {
+    return { valid: false, error: "Ungültige Stunde" };
+  }
+
+  if (minutes < 0 || minutes > 59) {
+    return { valid: false, error: "Ungültige Minute" };
+  }
+
+  return { valid: true };
+}
+
 export function AlarmCreate({ alarm, onCreate }: AlarmCreateProps) {
   const { handleSubmit, control, reset, setValue } = useForm<Inputs>({
     defaultValues: {
-      time: alarm?.time ?? "00:00",
-      hours: alarm?.time?.slice(0, 2) ?? "00",
-      minutes: alarm?.time?.slice(3, 5) ?? "00",
+      timeDigits: alarm?.time?.replace(":", "") ?? "",
       recurring_days: alarm?.recurring_days ?? null,
       label: alarm?.label ?? "Wecker 1",
     },
@@ -42,8 +68,9 @@ export function AlarmCreate({ alarm, onCreate }: AlarmCreateProps) {
   const [isListening, setIsListening] = useState<boolean>(false);
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
   const [error, setError] = useState<string>("");
+  const [formError, setFormError] = useState<string>("");
   const recorderRef = useRef<AlarmNameRecorder | null>(null);
-  let digits: string;
+  const [numPadtoggled, setNumPadToggled] = useState<boolean>(false);
 
   useEffect(() => {
     // 1. Recorder-Instanz mit den drei Callbacks erstellen
@@ -58,9 +85,7 @@ export function AlarmCreate({ alarm, onCreate }: AlarmCreateProps) {
     recorderRef.current.connect();
 
     reset({
-      time: alarm?.time ?? "00:00",
-      hours: alarm?.time?.slice(0, 2) ?? "00",
-      minutes: alarm?.time?.slice(3, 5) ?? "00",
+      timeDigits: alarm?.time?.replace(":", "") ?? "",
       recurring_days: alarm?.recurring_days ?? null,
       label: alarm?.label ?? "Wecker 1",
     });
@@ -71,114 +96,151 @@ export function AlarmCreate({ alarm, onCreate }: AlarmCreateProps) {
         recorderRef.current.disconnect();
       }
     };
-  }, [alarm, reset, setValue]);
+  }, [alarm, reset]);
 
   return (
     <>
       <form
         onSubmit={handleSubmit(onSubmit)}
-        className="w-full h-full flex items-center justify-center"
+        className="w-full h-[720px]"
       >
-        <div className="flex gap-52">
+        <div className="h-[720px] flex items-center justify-around">
           {/* Time */}
           <Controller
             control={control}
-            name="time"
+            name="timeDigits"
             render={({ field }) => {
-              digits = (field.value ?? "00:00").replace(/\D/g, "").slice(0, 4);
-              const { hours, minutes } = splitValidateDigits();
-              setValue('hours', hours);
-              setValue('minutes', minutes);
+              const digits = normalizeDigits(field.value);
+              const { time } = parseTimeDigits(digits);
+              const validation = validateTimeDigits(digits);
+              const displayTime = time;
 
               return (
-                <div className="flex flex-col items-center justify-center gap-5">
+                <div className="flex height-full flex-col items-center justify-center gap-5">
                   {/* Uhrzeit */}
                   <div className="text-[75px] leading-none font-medium tracking-[-0.04em] max-md:text-[60px]">
-                    {hours}:{minutes}
+                    {displayTime}
                   </div>
-                  <NumPad
-                    value={digits}
-                    onChange={(nextDigits) => {
-                      field.onChange(nextDigits);
-                    }}
-                    onClear={() => field.onChange("00:00")}
-                    onConfirm={() => undefined}
-                  />
+                  {(!validation.valid || formError) && (
+                    <p className="px-1 text-sm font-medium text-red-600">
+                      {validation.valid ? formError : validation.error}
+                    </p>
+                  )}
+                  <div className="mt-auto flex justify-center">
+                    <button 
+                    className="rounded-full bg-white px-3.75 py-2.5 text-[20px] font-medium text-black"
+                    onClick={() => {
+                        setNumPadToggled(!numPadtoggled);
+                      }}
+                    type="button">{numPadtoggled ? "Routine wählen" : "Zeit wählen"}</button>
+                  </div>
                 </div>
               );
             }}
           />
+
+
           <div className="flex flex-col gap-3">
-            {/* Weekday */}
-            <Controller
-              control={control}
-              name="recurring_days"
-              render={({ field }) => (
-                <WeekdayChips
-                  recurringDays={field.value}
-                  onChange={field.onChange}
+            {/* NUMPAD */}
+            <div className={numPadtoggled ? "" : "hidden"}>
+              <Controller
+                  control={control}
+                  name="timeDigits"
+                  render={({ field }) => {
+                    const digits = normalizeDigits(field.value);
+                    return (
+                      <NumPad
+                        value={digits}
+                        onChange={(nextDigits) => {
+                          setFormError(""); //alten Fehler zurücksetzen, wenn sich die Eingabe ändert
+                          field.onChange(nextDigits);
+                        }}
+                        onClear={() => {
+                          setFormError("");
+                          field.onChange("");
+                        }}
+                        onConfirm={() => undefined}
+                      />
+                    );
+                  }}
                 />
-              )}
-            />
-            <div className="flex flex-col gap-1">
-              {/* <SettingsRow
-                icon={pauseIcon}
-                label="Schlummern"
-                topRounded={true}
-                trailing={plusIcon}
-              /> */}
+              </div>
+            
+            {/* WEEKDAYS */}
+            <div className={numPadtoggled ? "hidden" : "flex gap-3 flex-col"}>
+              {/* Weekday */}
               <Controller
                 control={control}
-                name="label"
+                name="recurring_days"
                 render={({ field }) => (
-                  <div className="flex gap-3">
-                    {isListening && (
-                      <SettingsRow icon={tagIcon} label={"Hört zu..."} />
-                    )}
-                    {isProcessing && (
-                      <SettingsRow icon={tagIcon} label={"Verarbeite..."} />
-                    )}
-                    {!isListening && !isProcessing && (
-                      <SettingsRow icon={tagIcon} label={field.value} />
-                    )}
-                    <button
-                      type="button"
-                      className={`flex w-16 items-center justify-center bg-white/85 p-3.75 text-black rounded-[5px] ${isListening ? "mix-blend-normal" : "mix-blend-soft-light"} ${isProcessing ? "cursor-wait opacity-70" : ""}`}
-                      onClick={() => {
-                        handleButtonClick();
-                      }}
-                      disabled={isProcessing}
-                      aria-label={
-                        isListening
-                          ? "Aufnahme des Alarmnamens stoppen"
-                          : isProcessing
-                            ? "Alarmname wird verarbeitet"
-                          : "Aufnahme des Alarmnamens starten"
-                      }
-                    >
-                      {!isListening ? (
-                        <img
-                          src={micIcon}
-                          alt=""
-                          className="h-7.5 w-7.5 shrink-0"
-                          aria-hidden="true"
-                        />
-                      ) : (
-                        <img
-                          src={micRedIcon}
-                          alt=""
-                          className="h-7.5 w-7.5 shrink-0"
-                          aria-hidden="true"
-                        />
-                      )}
-                    </button>
+                  <div>
+                    <WeekdayChips
+                      recurringDays={field.value}
+                      onChange={field.onChange}
+                    />
                   </div>
                 )}
               />
-              {error && (
-                <p className="px-1 text-sm font-medium text-red-600">{error}</p>
-              )}
-              {/* <SettingsRow icon={bellIcon} label="Ton" bottomRounded={true} /> */}
+              <div className="flex flex-col gap-1">
+                {/* <SettingsRow
+                  icon={pauseIcon}
+                  label="Schlummern"
+                  topRounded={true}
+                  trailing={plusIcon}
+                /> */}
+                <Controller
+                  control={control}
+                  name="label"
+                  render={({ field }) => (
+                    <div className="flex gap-3">
+                      {isListening && (
+                        <SettingsRow icon={tagIcon} label={"Hört zu..."} />
+                      )}
+                      {isProcessing && (
+                        <SettingsRow icon={tagIcon} label={"Verarbeite..."} />
+                      )}
+                      {!isListening && !isProcessing && (
+                        <SettingsRow icon={tagIcon} label={field.value} />
+                      )}
+                      <button
+                        type="button"
+                        className={`flex w-16 items-center justify-center bg-white/85 p-3.75 text-black rounded-[5px] ${isListening ? "mix-blend-normal" : "mix-blend-soft-light"} ${isProcessing ? "cursor-wait opacity-70" : ""}`}
+                        onClick={() => {
+                          handleButtonClick();
+                        }}
+                        disabled={isProcessing}
+                        aria-label={
+                          isListening
+                            ? "Aufnahme des Alarmnamens stoppen"
+                            : isProcessing
+                            ? "Alarmname wird verarbeitet"
+                            : "Aufnahme des Alarmnamens starten"
+                        }
+                      >
+                        {!isListening ? (
+                          <img
+                            src={micIcon}
+                            alt=""
+                            className="h-7.5 w-7.5 shrink-0"
+                            aria-hidden="true"
+                          />
+                        ) : (
+                          <img
+                            src={micRedIcon}
+                            alt=""
+                            className="h-7.5 w-7.5 shrink-0"
+                            aria-hidden="true"
+                          />
+                        )}
+                      </button>
+                    </div>
+                  )}
+                />
+                {error && (
+                  <p className="px-1 text-sm font-medium text-red-600">{error}</p>
+                )}
+                {/* <SettingsRow icon={bellIcon} label="Ton" bottomRounded={true} /> */}
+              </div>
             </div>
             <div className="relative z-10 mt-auto flex justify-center pt-12.5">
               <ActionPill type="submit">Speichern</ActionPill>
@@ -188,31 +250,6 @@ export function AlarmCreate({ alarm, onCreate }: AlarmCreateProps) {
       </form>
     </>
   );
-
-  function splitValidateDigits() {
-  let hoursTemp : number | string = digits.slice(0, 2);
-  let minutesTemp : number | string = digits.slice(2, 4);
-
-  hoursTemp = parseInt(hoursTemp, 10) > 24 
-            ? '24' 
-          : parseInt(hoursTemp, 10) < 0 
-            ? '00' 
-          : hoursTemp;
-
-  minutesTemp = parseInt(minutesTemp, 10) > 59 
-            ? '59' 
-          : parseInt(minutesTemp, 10) < 0 
-            ? '00' 
-          : minutesTemp;
-
-
-  digits = `${hoursTemp.padEnd(2, '0')}${minutesTemp.padEnd(2, '0')}`;
-
-  return {
-    hours: hoursTemp.toString(),
-    minutes: minutesTemp.toString(),
-  };
-  }
 
   function handleButtonClick() {
     if (!recorderRef.current) return;
@@ -228,11 +265,22 @@ export function AlarmCreate({ alarm, onCreate }: AlarmCreateProps) {
   }
 
   async function onSubmit(data: Inputs): Promise<void> {
+    const digits = normalizeDigits(data.timeDigits);
+    const validation = validateTimeDigits(digits);
+
+    if (!validation.valid) {
+      setFormError(validation.error ?? "Ungültige Uhrzeit");
+      return;
+    }
+
+    const { time } = parseTimeDigits(digits);
+    setFormError("");
+
     if (typeof alarm?.id === "number") {
       // Update existing alarm
       const submittedAlarm = AlarmSchema.parse({
         id: alarm.id,
-        time: data.time,
+        time,
         recurring_days: data.recurring_days,
         label: data.label,
         active: alarm.active ?? true,
@@ -243,16 +291,16 @@ export function AlarmCreate({ alarm, onCreate }: AlarmCreateProps) {
       );
       console.log("Alarm updated:", updatedAlarm);
     } else {
-      const submittedAlarm = AlarmCreateSchema.parse({
-        time: data.time,
-        recurring_days: data.recurring_days,
-        label: data.label,
-      });
+        const submittedAlarm = AlarmCreateSchema.parse({
+          time,
+          recurring_days: data.recurring_days,
+          label: data.label,
+        });
 
       // Logging
-      const createdAlarm = await alarmsService.createAlarm(submittedAlarm);
-      console.log("Alarm created:", createdAlarm);
-    }
+        const createdAlarm = await alarmsService.createAlarm(submittedAlarm);
+        console.log("Alarm created:", createdAlarm);
+      }
     onCreate?.();
   }
 }
