@@ -116,7 +116,8 @@ export function AlarmCreate({ alarm, onCreate, onBack }: AlarmCreateProps) {
           </button>
 
           <div className="flex flex-row h-[400px] items-center justify-around">
-            {/* Time */}
+
+            {/* LEFT SIDE */}
             <div className="w-[640px]">
               <Controller
                 control={control}
@@ -133,11 +134,13 @@ export function AlarmCreate({ alarm, onCreate, onBack }: AlarmCreateProps) {
                       <div className="text-[75px] leading-none font-medium tracking-[-0.04em] max-md:text-[60px]">
                         {displayTime}
                       </div>
+                      <div className="h-6">
                       {(!validation.valid || formError) && (
                         <p className="px-1 text-sm font-medium text-red-600">
                           {validation.valid ? formError : validation.error}
                         </p>
                       )}
+                      </div>
                       <div className="mt-auto flex justify-center">
                         <button 
                           className="rounded-full bg-white px-3.75 py-2.5 text-[20px] font-medium text-black"
@@ -153,7 +156,7 @@ export function AlarmCreate({ alarm, onCreate, onBack }: AlarmCreateProps) {
               />
             </div>
 
-            
+            {/* RIGHT SIDE */}
             <div className="w-[640px]">
               
               {/* NUMPAD */}
@@ -207,7 +210,7 @@ export function AlarmCreate({ alarm, onCreate, onBack }: AlarmCreateProps) {
                     control={control}
                     name="label"
                     render={({ field }) => (
-                      <div className="flex gap-3">
+                      <div className="flex w-[550px] gap-3">
                         {isListening && (
                           <SettingsRow icon={tagIcon} label={"Hört zu..."} />
                         )}

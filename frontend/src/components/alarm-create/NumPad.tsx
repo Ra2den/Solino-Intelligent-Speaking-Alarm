@@ -25,7 +25,7 @@ function appendDigit(value: string, key: string) {
   return appended;
 }
 
-export function NumPad({ value = '', onChange, onConfirm, onClear }: NumPadProps) {
+export function NumPad({ value = '', onChange, onClear }: NumPadProps) {
   const [displayValue, setDisplayValue] = useState(() => normalizeDigits(value));
 
   useEffect(() => {
@@ -41,35 +41,46 @@ export function NumPad({ value = '', onChange, onConfirm, onClear }: NumPadProps
     onChange(nextValue);
   };
 
+  const handleBackspace = () => {
+    const current = normalizeDigits(displayValue);
+    const next = current.slice(0, -1);
+
+    setDisplayValue(next);
+    onChange?.(next);
+  };
+
   return (
-    <div className="num-pad">
+    <div className="num-pad w-[500px]">
       <div className="grid grid-cols-3 gap-2.5 font-medium text-black hover:bg-gray-200">
         {keys.map((key) => (
           <button
             key={key}
             type="button"
-            className="flex h-25 w-30 items-center justify-center bg-white px-3 py-1.25 text-[25px] leading-none font-medium opacity-50 rounded-[15px] text-black"
+            className="flex h-25 w-30 items-center justify-center bg-white text-[25px] leading-none font-medium opacity-50 rounded-[15px] text-black"
             onClick={() => handlePress(key)}
+            aria-label={`Digit ${key}`}
           >
             {key}
           </button>
         ))}
         <button
           type="button"
-          className="flex h-25 w-30 items-center justify-center bg-white px-3 py-1.25 text-[20px] leading-none font-medium opacity-50 rounded-[15px] text-black"
+          className="flex h-25 w-30 items-center justify-center bg-white text-[20px] leading-none font-medium opacity-50 rounded-[15px] text-black"
+          onClick={handleBackspace}
+          aria-label="Backspace"
+        >
+          Back
+        </button>
+        <button
+          type="button"
+          className="flex h-25 w-30 items-center justify-center bg-white text-[20px] leading-none font-medium opacity-50 rounded-[15px] text-black"
           onClick={() => {
             setDisplayValue('');
             onClear?.();
           }}
+          aria-label="Clear"
         >
           Clear
-        </button>
-        <button
-          type="button"
-          className="flex h-25 w-30 items-center justify-center bg-white px-3 py-1.25 text-[20px] leading-none font-medium opacity-50 rounded-[15px] text-black"
-          onClick={onConfirm}
-        >
-          OK
         </button>
       </div>
     </div>
