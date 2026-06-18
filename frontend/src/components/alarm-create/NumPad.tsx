@@ -1,4 +1,4 @@
-﻿import { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 
 export type NumPadProps = {
   value?: string;
@@ -18,6 +18,11 @@ function normalizeDigits(value = '') {
 function appendDigit(value: string, key: string) {
   // Treat the default 0000 as empty input so the first user digit is visible.
   const current = normalizeDigits(value);
+
+  // If we already have 4 digits, typing a new digit should start a new entry.
+  if (current.length === 4) {
+    return key;
+  }
 
   // Removes any non-digit characters and limits to 4 digits.
   const appended = `${current}${key}`.replace(/\D/g, '').slice(0, 4);
