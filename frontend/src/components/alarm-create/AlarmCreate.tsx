@@ -4,20 +4,18 @@ import {
   type Alarm,
   type WeekdayArray,
 } from "../../models/alarm/alarm.model";
-import tagIcon from "../../assets/alarm-create/tag.svg";
 import { Controller, useForm } from "react-hook-form";
 import { useEffect, useRef, useState } from "react";
-import { SettingsRow } from "./SettingsRow";
 import { WeekdayChips } from "./WeekdayChips";
-import { ActionPill } from "./ActionPill";
-import { Timepicker } from "timepicker-ui-react";
+import { NumPad } from "./NumPad";
 import { alarmsService } from "../../services/alarms.service";
 import AlarmNameRecorder from "../../services/alarm-name-recorder";
 import micIcon from "../../assets/alarm-create/mic.svg";
 import micRedIcon from "../../assets/alarm-create/mic-red.svg";
+import backIcon from "/src/assets/alarm/icon-back.svg";
 
 type Inputs = {
-  time: string;
+  timeDigits: string;
   recurring_days: WeekdayArray;
   label: string;
 };
@@ -25,21 +23,53 @@ type Inputs = {
 type AlarmCreateProps = {
   alarm?: Partial<Alarm>;
   onCreate?: () => void;
+  onBack?: () => void;
 };
 
-export function AlarmCreate({ alarm, onCreate }: AlarmCreateProps) {
-  const { handleSubmit, control, reset, setValue } = useForm<Inputs>({
+const normalizeDigits = (value = "") => value.replace(/\D/g, "").slice(0, 4);
+
+const padTimeDigits = (value = "") => normalizeDigits(value).padEnd(4, "0");
+
+function parseTimeDigits(value = "") {
+  const padded = padTimeDigits(value);
+  const hours = Number(padded.slice(0, 2));
+  const minutes = Number(padded.slice(2, 4));
+
+  return {
+    hours,
+    minutes,
+    time: `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}`,
+  };
+}
+
+function validateTimeDigits(value = "") {
+  const { hours, minutes } = parseTimeDigits(value);
+
+  if (hours < 0 || hours > 23) {
+    return { valid: false, error: "Ungültige Stunde" };
+  }
+
+  if (minutes < 0 || minutes > 59) {
+    return { valid: false, error: "Ungültige Minute" };
+  }
+
+  return { valid: true };
+}
+
+export function AlarmCreate({ alarm, onCreate, onBack }: AlarmCreateProps) {
+  const { handleSubmit, control, reset, setValue, getValues } = useForm<Inputs>({
     defaultValues: {
-      time: alarm?.time ?? "00:00",
+      timeDigits: alarm?.time?.replace(":", "") ?? "0700",
       recurring_days: alarm?.recurring_days ?? null,
-      label: alarm?.label ?? "Wecker 1",
+      label: alarm?.label ?? "Wecker",
     },
   });
   const [isListening, setIsListening] = useState<boolean>(false);
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
   const [error, setError] = useState<string>("");
-
+  const [formError, setFormError] = useState<string>("");
   const recorderRef = useRef<AlarmNameRecorder | null>(null);
+  const [numPadtoggled, setNumPadToggled] = useState<boolean>(false);
 
   useEffect(() => {
     // 1. Recorder-Instanz mit den drei Callbacks erstellen
@@ -54,9 +84,9 @@ export function AlarmCreate({ alarm, onCreate }: AlarmCreateProps) {
     recorderRef.current.connect();
 
     reset({
-      time: alarm?.time ?? "00:00",
+      timeDigits: alarm?.time?.replace(":", "") ?? "0700",
       recurring_days: alarm?.recurring_days ?? null,
-      label: alarm?.label ?? "Wecker 1",
+      label: alarm?.label ?? "Wecker",
     });
 
     // 3. Verbindung beim Schließen der Komponente sauber trennen
@@ -71,79 +101,91 @@ export function AlarmCreate({ alarm, onCreate }: AlarmCreateProps) {
     <>
       <form
         onSubmit={handleSubmit(onSubmit)}
-        className="w-full h-full flex items-center justify-center"
+        className="relative w-full h-180 flex flex-col"
       >
-        <div className="flex gap-52">
-          {/* Time */}
-          <Controller
-            control={control}
-            name="time"
-            render={({ field }) => (
-              <div className="flex flex-col items-center justify-center gap-5">
-                {/* Uhrzeit */}
-                <div className="text-[75px] leading-none font-medium tracking-[-0.04em] max-md:text-[60px]">
-                  {field.value ?? "00:00"}
-                </div>
-                <div className="relative">
-                  <Timepicker
-                    placeholder="Bearbeiten"
-                    className={`rounded-full bg-white px-3.75 py-2.5 text-[20px] font-medium text-transparent caret-transparent transition-all duration-200 text-center placeholder:text-transparent`}
-                    name="time"
-                    value={field.value}
-                    required
-                    onUpdate={(data) =>
-                      field.onChange(`${data.hour}:${data.minutes}`)
-                    }
-                    options={{
-                      clock: { type: "24h" },
-                      ui: {
-                        enableSwitchIcon: false,
-                      },
-                    }}
-                  />
-                  <span className="pointer-events-none absolute inset-0 flex items-center justify-center text-[20px] font-medium text-black">
-                    Bearbeiten
-                  </span>
-                </div>
-              </div>
-            )}
-          />
-          <div className="flex flex-col gap-3">
-            {/* Weekday */}
+        {/* Top Action Bar */}
+        <div className="relative flex justify-between items-center w-full px-6 py-8">
+          <button
+              type="button"
+              onClick={onBack}
+              className="flex justify-center items-center h-12 w-12"
+              aria-label="Zurück">
+              <img src={backIcon} alt="" className="w-10 h-10" aria-hidden="true" />
+          </button>
+          <div className="absolute left-1/2 -translate-x-1/2 text-2xl font-medium text-white mix-blend-soft-light pointer-events-none">
+            {typeof alarm?.id === "number" ? "Wecker bearbeiten" : "Neuer Wecker"}
+          </div>
+          {numPadtoggled ? (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.preventDefault();
+                const digits = normalizeDigits(getValues("timeDigits"));
+                const validation = validateTimeDigits(digits);
+                if (validation.valid) {
+                  setNumPadToggled(false);
+                } else {
+                  setFormError(validation.error || "Ungültige Uhrzeit");
+                }
+              }}
+              className="flex justify-center items-center bg-white text-black px-10 py-5 rounded-[30px] font-bold text-2xl shadow-lg hover:bg-gray-100 transition-colors"
+            >
+              Fertig
+            </button>
+          ) : (
+            <button
+              type="submit"
+              className="flex justify-center items-center bg-white text-black px-10 py-5 rounded-[30px] font-bold text-2xl shadow-lg hover:bg-gray-100 transition-colors"
+            >
+              Speichern
+            </button>
+          )}
+        </div>
+
+        {!numPadtoggled ? (
+          <div className="flex flex-col items-center justify-center flex-1 gap-12 -mt-10">
+            {/* Hero Element (Time) */}
             <Controller
               control={control}
-              name="recurring_days"
-              render={({ field }) => (
-                <WeekdayChips
-                  recurringDays={field.value}
-                  onChange={field.onChange}
-                />
-              )}
-            />
-            <div className="flex flex-col gap-1">
-              {/* <SettingsRow
-                icon={pauseIcon}
-                label="Schlummern"
-                topRounded={true}
-                trailing={plusIcon}
-              /> */}
-              <Controller
-                control={control}
-                name="label"
-                render={({ field }) => (
-                  <div className="flex gap-3">
-                    {isListening && (
-                      <SettingsRow icon={tagIcon} label={"Hört zu..."} />
-                    )}
-                    {isProcessing && (
-                      <SettingsRow icon={tagIcon} label={"Verarbeite..."} />
-                    )}
-                    {!isListening && !isProcessing && (
-                      <SettingsRow icon={tagIcon} label={field.value} />
-                    )}
+              name="timeDigits"
+              render={({ field }) => {
+                const digits = normalizeDigits(field.value);
+                const { time } = parseTimeDigits(digits);
+                const validation = validateTimeDigits(digits);
+                const displayTime = time;
+
+                return (
+                  <div className="flex flex-col items-center justify-center gap-2">
                     <button
                       type="button"
-                      className={`flex w-16 items-center justify-center bg-white/85 p-3.75 text-black rounded-[5px] ${isListening ? "mix-blend-normal" : "mix-blend-soft-light"} ${isProcessing ? "cursor-wait opacity-70" : ""}`}
+                      onClick={() => setNumPadToggled(true)}
+                      className="text-[120px] leading-none font-medium tracking-[-0.04em] hover:opacity-80 transition-opacity"
+                      aria-label="Zeit ändern"
+                    >
+                      {displayTime}
+                    </button>
+                    <div className="h-6">
+                      {(!validation.valid || formError) && (
+                        <p className="px-1 text-[16px] font-medium text-red-500">
+                          {validation.valid ? formError : validation.error}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                );
+              }}
+            />
+
+            {/* Secondary Settings */}
+            <div className="flex flex-col items-center gap-8">
+              <div className="flex flex-col items-center gap-2">
+                <Controller
+                  control={control}
+                  name="label"
+                  render={({ field }) => (
+                    <button
+                      type="button"
+                      className={`flex items-center justify-center gap-4 bg-white/85 px-6 py-4 rounded-[20px] w-[450px] shadow-sm transition-all ${isListening ? "bg-white scale-105" : "mix-blend-soft-light"} ${isProcessing ? "cursor-wait opacity-70" : ""}`}
                       onClick={() => {
                         handleButtonClick();
                       }}
@@ -153,38 +195,107 @@ export function AlarmCreate({ alarm, onCreate }: AlarmCreateProps) {
                           ? "Aufnahme des Alarmnamens stoppen"
                           : isProcessing
                             ? "Alarmname wird verarbeitet"
-                          : "Aufnahme des Alarmnamens starten"
+                            : "Aufnahme des Alarmnamens starten"
                       }
                     >
+                      <span className="text-[24px] font-medium text-black flex-1 text-center truncate">
+                        {isListening
+                          ? "Hört zu..."
+                          : isProcessing
+                            ? "Verarbeite..."
+                            : field.value}
+                      </span>
                       {!isListening ? (
                         <img
                           src={micIcon}
                           alt=""
-                          className="h-7.5 w-7.5 shrink-0"
+                          className="h-8 w-8 shrink-0 opacity-80"
                           aria-hidden="true"
                         />
                       ) : (
                         <img
                           src={micRedIcon}
                           alt=""
-                          className="h-7.5 w-7.5 shrink-0"
+                          className="h-8 w-8 shrink-0 animate-pulse"
                           aria-hidden="true"
                         />
                       )}
                     </button>
-                  </div>
+                  )}
+                />
+                <div className="h-6 w-full flex justify-center">
+                  {error && (
+                    <p className="px-1 text-[16px] font-medium text-red-500">{error}</p>
+                  )}
+                </div>
+              </div>
+
+              <Controller
+                control={control}
+                name="recurring_days"
+                render={({ field }) => (
+                  <WeekdayChips
+                    recurringDays={field.value}
+                    onChange={field.onChange}
+                  />
                 )}
               />
-              {error && (
-                <p className="px-1 text-sm font-medium text-red-600">{error}</p>
-              )}
-              {/* <SettingsRow icon={bellIcon} label="Ton" bottomRounded={true} /> */}
-            </div>
-            <div className="relative z-10 mt-auto flex justify-center pt-12.5">
-              <ActionPill type="submit">Speichern</ActionPill>
             </div>
           </div>
-        </div>
+        ) : (
+          <div className="flex flex-row items-center justify-center flex-1 gap-20 px-10 pb-20">
+            {/* Left Side: Time */}
+            <div className="flex-1 flex flex-col items-center justify-center">
+              <Controller
+                control={control}
+                name="timeDigits"
+                render={({ field }) => {
+                  const digits = normalizeDigits(field.value);
+                  const { time } = parseTimeDigits(digits);
+                  const validation = validateTimeDigits(digits);
+                  return (
+                    <>
+                      <div className="text-[140px] leading-none font-medium tracking-[-0.04em]">
+                        {time}
+                      </div>
+                      <div className="h-6 mt-4">
+                        {(!validation.valid || formError) && (
+                          <p className="px-1 text-[20px] font-medium text-red-500">
+                            {validation.valid ? formError : validation.error}
+                          </p>
+                        )}
+                      </div>
+                    </>
+                  );
+                }}
+              />
+            </div>
+
+            {/* Right Side: NumPad */}
+            <div className="flex-1 flex items-center justify-center">
+              <Controller
+                control={control}
+                name="timeDigits"
+                render={({ field }) => {
+                  const digits = normalizeDigits(field.value);
+                  return (
+                    <NumPad
+                      value={digits}
+                      onChange={(nextDigits) => {
+                        setFormError("");
+                        field.onChange(nextDigits);
+                      }}
+                      onClear={() => {
+                        setFormError("");
+                        field.onChange("");
+                      }}
+                    />
+                  );
+                }}
+              />
+            </div>
+          </div>
+        )}
       </form>
     </>
   );
@@ -203,11 +314,22 @@ export function AlarmCreate({ alarm, onCreate }: AlarmCreateProps) {
   }
 
   async function onSubmit(data: Inputs): Promise<void> {
+    const digits = normalizeDigits(data.timeDigits);
+    const validation = validateTimeDigits(digits);
+
+    if (!validation.valid) {
+      setFormError(validation.error ?? "Ungültige Uhrzeit");
+      return;
+    }
+
+    const { time } = parseTimeDigits(digits);
+    setFormError("");
+
     if (typeof alarm?.id === "number") {
       // Update existing alarm
       const submittedAlarm = AlarmSchema.parse({
         id: alarm.id,
-        time: data.time,
+        time,
         recurring_days: data.recurring_days,
         label: data.label,
         active: alarm.active ?? true,
@@ -219,7 +341,7 @@ export function AlarmCreate({ alarm, onCreate }: AlarmCreateProps) {
       console.log("Alarm updated:", updatedAlarm);
     } else {
       const submittedAlarm = AlarmCreateSchema.parse({
-        time: data.time,
+        time,
         recurring_days: data.recurring_days,
         label: data.label,
       });

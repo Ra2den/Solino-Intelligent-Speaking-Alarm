@@ -104,6 +104,9 @@ export function HomeScreen() {
           setIsCreate(false);
           setAlarmToEdit(undefined);
         }}
+        onBack={() => {
+          setIsCreate(false);
+        }}
       />
     ) : (
       <div className="w-full h-full overflow-hidden grid grid-cols-5 p-12 gap-6">

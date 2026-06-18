@@ -20,25 +20,27 @@ type WeekdayChipsProps = {
 
 export function WeekdayChips({ recurringDays, onChange }: WeekdayChipsProps) {
   return (
-    <div className="flex items-center justify-between gap-2.5">
-      {dayChips.map((day) => {
-        const isActive = recurringDays?.includes(day.value) ?? false;
+    <div>
+      <div className="flex flex-row justify-center gap-3 w-full max-w-[700px]">
+        {dayChips.map((day) => {
+          const isActive = recurringDays?.includes(day.value) ?? false;
 
-        return (
-          <button
-            key={day.value}
-            className={`flex h-15 w-17 items-center justify-center bg-white px-3 py-1.25 text-[25px] leading-none font-medium transition-all duration-200 ${
-              isActive
-                ? "rounded-[20px] text-black"
-                : "rounded-[10px] text-black opacity-50"
-            }`}
-            onClick={() => toggleDay(day.value)}
-            type="button"
-          >
-            {day.label}
-          </button>
-        );
-      })}
+          return (
+            <button
+              key={day.value}
+              className={`flex h-[90px] w-[90px] items-center justify-center bg-white px-2 py-1 text-[38px] leading-none font-bold transition-all duration-200 ${
+                isActive
+                  ? "rounded-full text-black"
+                  : "rounded-full text-black opacity-50"
+              }`}
+              onClick={() => toggleDay(day.value)}
+              type="button"
+            >
+              {day.label}
+            </button>
+          );
+        })}
+      </div>
     </div>
   );
 
