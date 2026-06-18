@@ -3,11 +3,16 @@ import type { Alarm } from "../../models/alarm/alarm.model";
 import { AlarmCard } from "./AlarmCard";
 import backIcon from "/src/assets/alarm/icon-back.svg";
 import { alarmsService } from "../../services/alarms.service";
+import alarmAddIcon from "../../assets/alarm/icon-alarmAddBtn.svg";
+
 type AlarmListProps = {
   onBack: () => void;
+  onCreate?: () => void;
+  onEdit?: (alarm: Alarm) => void;
+  onDelete?: (alarmId: number) => void;
 };
 
-export function AlarmList({ onBack }: AlarmListProps) {
+export function AlarmList({ onBack, onCreate, onEdit, onDelete }: AlarmListProps) {
   const [alarms, setAlarms] = useState<Alarm[]>([]);
 
   useEffect(() => {
@@ -36,7 +41,18 @@ export function AlarmList({ onBack }: AlarmListProps) {
       {/* Scrollbare Liste */}
       <div className="min-h-0 flex-1 overflow-y-auto flex flex-col gap-6 pr-4 custom-scrollbar">
         {alarms.length === 0 ? (
-          <p className="text-gray-500">Keine Wecker vorhanden.</p>
+            <div className="flex items-center justify-center w-full h-[300px] relative rounded-[50px] bg-black mix-blend-soft-light">
+              <button
+                    onClick={onCreate}
+                    className="w-full h-full flex-column gap-4 items-center justify-center transition-opacity"
+                    aria-label="Wecker hinzufügen"
+                  >
+                  <img src={alarmAddIcon} alt="" className="w-full h-20"/>
+                  <p className="text-white text-[24px] font-medium pt-4">
+                    Neuen Wecker erstellen
+                  </p>
+              </button>
+            </div>
         ) : (
           alarms.map((alarm) => (
             <div key={alarm.id} className="w-full h-65">
@@ -44,6 +60,8 @@ export function AlarmList({ onBack }: AlarmListProps) {
                 alarm={alarm}
                 isWidget={false}
                 onToggle={() => handleToggleAlarm(alarm.id)}
+                onEdit={() => onEdit?.(alarm)}
+                onDelete={() => handleDeleteAlarm(alarm.id)}
               />
             </div>
           ))
@@ -60,5 +78,19 @@ export function AlarmList({ onBack }: AlarmListProps) {
         alarm.id === alarmId ? updatedAlarm : alarm,
       ),
     );
+  }
+
+  async function handleDeleteAlarm(alarmId: number) {
+    try {
+      await alarmsService.deleteAlarm(alarmId);
+      setAlarms((currentAlarms) =>
+        currentAlarms.filter((alarm) => alarm.id !== alarmId),
+      );
+      onDelete?.(alarmId);
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        console.error("alarms.deleteAlarm error:", err.message);
+      }
+    }
   }
 }

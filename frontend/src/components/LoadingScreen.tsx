@@ -1,8 +1,6 @@
 import { useEffect, useState } from "react";
-import { usePhase } from "../hooks/usePhase";
 import solinoBase from "../assets/agent/solino_base.svg";
 import solinoRing from "../assets/agent/solino_ring.svg";
-import { PhaseSchema } from "../models/simulator/phase.model";
 
 type LoadingScreenProps = {
   isPhaseLoading: boolean;
