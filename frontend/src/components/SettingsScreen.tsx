@@ -1,17 +1,17 @@
+import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { settingsService } from "../services/settings.service";
 import backIcon from "../assets/alarm/icon-back.svg";
-import {
-  type SettingsItem,
-  type SettingsKey,
-} from "../models/settings/settings.model";
-import { useState, useEffect } from "react";
+import type { SettingsKey } from "../models/settings/settings.model";
 
 type SettingsScreenProps = {
   onBack: () => void;
 };
 
 export default function SettingsScreen({ onBack }: SettingsScreenProps) {
+  const [activeTab, setActiveTab] = useState<"General" | "Advanced">("General");
+  const [isDev, setIsDev] = useState<boolean>(true);
+
   const queryClient = useQueryClient();
   const { data: settings, isLoading } = useQuery({
     queryKey: ["settings"],
@@ -31,112 +31,240 @@ export default function SettingsScreen({ onBack }: SettingsScreenProps) {
     },
   });
 
-  if (isLoading) {
+  if (isLoading || !settings) {
     return (
       <div className="h-full w-full flex items-center justify-center">
-        <div className="text-black text-2xl">Laden...</div>
+        <div className="text-black text-2xl font-medium">Laden...</div>
       </div>
     );
   }
 
+  const getSettingValue = (key: SettingsKey) => {
+    return settings.find((s) => s.key === key)?.value;
+  };
+
   const handleUpdate = (key: SettingsKey, value: string | number | boolean) => {
-    mutation.mutate({ key, value });
+    // Only update if changed
+    if (getSettingValue(key) !== value) {
+      mutation.mutate({ key, value });
+    }
+  };
+
+  // Swipe gesture handling for tabs
+  let touchStartX = 0;
+  let touchEndX = 0;
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    touchStartX = e.changedTouches[0].screenX;
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    touchEndX = e.changedTouches[0].screenX;
+    if (touchStartX - touchEndX > 50) {
+      // Swiped left
+      setActiveTab("Advanced");
+    }
+    if (touchEndX - touchStartX > 50) {
+      // Swiped right
+      setActiveTab("General");
+    }
   };
 
   return (
-    <div className="h-full min-h-0 w-full flex flex-col overflow-hidden bg-white/60 backdrop-blur-xl rounded-[40px] p-8 shadow-sm">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-8">
-        <h1 className="text-black text-[40px] font-medium">Einstellungen</h1>
-        <button
-          onClick={onBack}
-          className="w-15 h-15 flex items-center justify-center transition-opacity hover:opacity-70"
-          aria-label="Zurück"
-        >
-          <img src={backIcon} alt="" className="w-10 h-10" aria-hidden="true" />
-        </button>
+    <div
+      className="h-full w-full flex flex-col rounded-[40px] p-6 overflow-hidden"
+      onTouchStart={handleTouchStart}
+      onTouchEnd={handleTouchEnd}
+    >
+      {/* Top Bar */}
+      <div className="flex items-center justify-between">
+        <div className="flex gap-10">
+          <button onClick={onBack} className="" aria-label="Zurück">
+            <img
+              src={backIcon}
+              alt=""
+              className="w-10 h-10"
+              aria-hidden="true"
+            />
+          </button>
+          <h1 className="text-black text-[32px] font-medium text-center">
+            Einstellungen
+          </h1>
+        </div>
+        {/* Tab Bar */}
+        <div className="flex bg-gray-200/60 rounded-full p-2 w-94 max-w-md shrink-0 shadow-inner mix-blend-soft-light">
+          <button
+            className={`flex-1 py-5 px-6 rounded-full text-2xl font-medium transition-all duration-300 ${
+              activeTab === "General"
+                ? "bg-white text-black shadow-md"
+                : "text-gray-500 hover:text-black"
+            }`}
+            onClick={() => setActiveTab("General")}
+          >
+            Allgemein
+          </button>
+          <button
+            className={`flex-1 py-3 px-6 rounded-full text-2xl font-medium transition-all duration-300 ${
+              activeTab === "Advanced"
+                ? "bg-white text-black shadow-md"
+                : "text-gray-500 hover:text-black"
+            }`}
+            onClick={() => setActiveTab("Advanced")}
+          >
+            Erweitert
+          </button>
+        </div>
       </div>
 
-      {/* Scrollbare Liste */}
-      <div className="min-h-0 flex-1 overflow-y-auto flex flex-col gap-4 pr-4 custom-scrollbar">
-        {settings?.map((setting) => (
-          <SettingRow
-            key={setting.key}
-            setting={setting}
-            onUpdate={(val) => handleUpdate(setting.key, val)}
-          />
-        ))}
+      {/* Tab Content - No scrolling allowed! */}
+      <div className="flex-1 flex flex-col justify-center">
+        {activeTab === "General" ? (
+          <>
+            <SettingSegmentGroup
+              label="Sprache"
+              options={[
+                { label: "English", value: "ENGLISH" },
+                { label: "Deutsch", value: "GERMAN" },
+              ]}
+              currentValue={getSettingValue("LANGUAGE") as string}
+              onChange={(val) => handleUpdate("LANGUAGE", val)}
+            />
+            <SettingSegmentGroup
+              label="Lautstärke"
+              options={[
+                { label: "25%", value: 25 },
+                { label: "50%", value: 50 },
+                { label: "75%", value: 75 },
+                { label: "100%", value: 100 },
+              ]}
+              currentValue={getSettingValue("VOLUME_PERCENT") as number}
+              onChange={(val) => handleUpdate("VOLUME_PERCENT", val)}
+            />
+            <SettingSegmentGroup
+              label="Schlummer Dauer"
+              options={[
+                { label: "1 min", value: 1 },
+                { label: "2 min", value: 2 },
+                { label: "5 min", value: 5 },
+                { label: "10 min", value: 10 },
+              ]}
+              currentValue={getSettingValue("SNOOZE_DURATION_MIN") as number}
+              onChange={(val) => handleUpdate("SNOOZE_DURATION_MIN", val)}
+            />
+          </>
+        ) : (
+          <>
+            <SettingSegmentGroup
+              label="Guard Modus Dauer"
+              options={
+                isDev
+                  ? [
+                      { label: "1 min", value: 1 },
+                      { label: "10 min", value: 10 },
+                      { label: "20 min", value: 20 },
+                      { label: "30 min", value: 30 },
+                    ]
+                  : [
+                      { label: "10 min", value: 10 },
+                      { label: "20 min", value: 20 },
+                      { label: "30 min", value: 30 },
+                    ]
+              }
+              currentValue={getSettingValue("GUARD_MODE_TIMER_MIN") as number}
+              onChange={(val) => handleUpdate("GUARD_MODE_TIMER_MIN", val)}
+            />
+            <SettingSegmentGroup
+              label="Guard Modus Toleranz"
+              options={
+                isDev
+                  ? [
+                      { label: "10s", value: 10 / 60 },
+                      { label: "1 min", value: 1 },
+                      { label: "2 min", value: 2 },
+                      { label: "3 min", value: 3 },
+                    ]
+                  : [
+                      { label: "1 min", value: 1 },
+                      { label: "2 min", value: 2 },
+                      { label: "3 min", value: 3 },
+                    ]
+              }
+              currentValue={getSettingValue("GUARD_MODE_TOLERANCE_MIN") as number}
+              onChange={(val) => handleUpdate("GUARD_MODE_TOLERANCE_MIN", val)}
+            />
+            <SettingSegmentGroup
+              label="Ollama Timeout"
+              options={[
+                { label: "15s", value: 15 },
+                { label: "30s", value: 30 },
+                { label: "60s", value: 60 },
+                { label: "120s", value: 120 },
+              ]}
+              currentValue={
+                getSettingValue("OLLAMA_HEALTH_CHECK_TIMEOUT_SEC") as number
+              }
+              onChange={(val) =>
+                handleUpdate("OLLAMA_HEALTH_CHECK_TIMEOUT_SEC", val)
+              }
+            />
+            <SettingSegmentGroup
+              label="Entwickler-Modus"
+              options={[
+                { label: "An", value: true },
+                { label: "Aus", value: false },
+              ]}
+              currentValue={isDev}
+              onChange={(val) => setIsDev(val as boolean)}
+            />
+          </>
+        )}
       </div>
     </div>
   );
 }
 
-function SettingRow({
-  setting,
-  onUpdate,
+function SettingSegmentGroup({
+  label,
+  options,
+  currentValue,
+  onChange,
 }: {
-  setting: SettingsItem;
-  onUpdate: (val: string | number | boolean) => void;
+  label: string;
+  options: { label: string; value: string | number | boolean }[];
+  currentValue: string | number | boolean;
+  onChange: (value: string | number | boolean) => void;
 }) {
-  const [localValue, setLocalValue] = useState(setting.value);
-
-  useEffect(() => {
-    setLocalValue(setting.value);
-  }, [setting.value]);
-
-  const handleBlur = () => {
-    if (localValue !== setting.value) {
-      onUpdate(localValue);
-    }
-  };
-
-  const labels: Record<string, string> = {
-    LANGUAGE: "Sprache",
-    VOICE: "Stimme",
-    VOLUME_PERCENT: "Lautstärke",
-    SNOOZE_DURATION_MIN: "Snooze Dauer (Min)",
-    OLLAMA_HEALTH_CHECK_TIMEOUT_SEC: "Ollama Timeout (Sek)",
-    GUARD_MODE_TIMER_MIN: "Wachmodus Timer (Min)",
-    GUARD_MODE_TOLERANCE_MIN: "Wachmodus Toleranz (Min)",
-  };
-
-  const label = labels[setting.key] || setting.key;
-
   return (
-    <div className="flex items-center justify-between bg-white/80 rounded-2xl p-4 shadow-sm">
-      <div className="text-black text-xl font-medium">{label}</div>
-      <div>
-        {typeof setting.value === "number" ? (
-          <input
-            type="number"
-            className="text-right text-xl p-2 rounded-xl bg-gray-50/50 border-none outline-none focus:ring-2 focus:ring-black w-32 transition-shadow"
-            value={localValue as number}
-            onChange={(e) => setLocalValue(Number(e.target.value))}
-            onBlur={handleBlur}
-            onKeyDown={(e) => e.key === "Enter" && handleBlur()}
-          />
-        ) : typeof setting.value === "boolean" ? (
-          <input
-            type="checkbox"
-            className="w-6 h-6 rounded-md accent-black cursor-pointer"
-            checked={localValue as boolean}
-            onChange={(e) => {
-              const val = e.target.checked;
-              setLocalValue(val);
-              onUpdate(val);
-            }}
-          />
-        ) : (
-          <input
-            type="text"
-            className="text-right text-xl p-2 rounded-xl bg-gray-50/50 border-none outline-none focus:ring-2 focus:ring-black w-48 transition-shadow"
-            value={localValue as string}
-            onChange={(e) => setLocalValue(e.target.value)}
-            onBlur={handleBlur}
-            onKeyDown={(e) => e.key === "Enter" && handleBlur()}
-          />
-        )}
+    <>
+      <div className="flex items-center justify-between w-full mix-blend-soft-light transition-opacity py-5">
+        <span className="text-black text-2xl font-medium ml-4 shrink-0">
+          {label}
+        </span>
+        <div className="flex gap-2 justify-end pr-2 flex-wrap sm:flex-nowrap">
+          {options.map((opt) => {
+            // For floats like 10/60, allow a small epsilon for equality
+            const isActive =
+              typeof currentValue === "number" && typeof opt.value === "number"
+                ? Math.abs(currentValue - opt.value) < 0.0001
+                : currentValue === opt.value;
+                
+            return (
+              <button
+                key={String(opt.value)}
+                onClick={() => onChange(opt.value)}
+                className={`min-w-40 h-19 px-12 rounded-full text-2xl font-medium transition-all duration-200 active:scale-95 flex items-center justify-center shrink-0 ${
+                  isActive
+                    ? "bg-black text-white shadow-md scale-105"
+                    : "bg-gray-100/80 text-gray-600 border border-gray-200 hover:bg-gray-200"
+                }`}
+              >
+                {opt.label}
+              </button>
+            );
+          })}
+        </div>
       </div>
-    </div>
+      <div className="bg-black/30 mix-blend-soft-light rounded-full w-auto h-0.5 mx-0"></div>
+    </>
   );
 }
