@@ -141,7 +141,7 @@ export function Agent({ isGuard = false, aiState }: AgentProps) {
             condition === WeatherConditionSchema.enum.Thunderstorm) &&
             displayRainyWeather()}
         </div>
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 mix-blend-soft-light">
           <img
             className={`${phase === PhaseSchema.parse("Night") ? "hidden" : "visible"} w-130 max-w-none object-contain ${animationsEnabled ? "animate-[spin_25s_linear_infinite]" : ""}`}
             src={solinoRing}
@@ -149,10 +149,10 @@ export function Agent({ isGuard = false, aiState }: AgentProps) {
           />
         </div>
         <div
-          className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 ${phase === PhaseSchema.parse("Night") ? "w-130" : "w-90"}`}
+          className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 mix-blend-soft-light ${phase === PhaseSchema.parse("Night") ? "w-130" : "w-90"}`}
         >
           <img
-            className="w-full object-contain"
+            className="w-full object-contain mix-blend-soft-light"
             src={phase === PhaseSchema.parse("Night") ? molinoBase : solinoBase}
             alt="Solino Base"
           />
@@ -161,7 +161,7 @@ export function Agent({ isGuard = false, aiState }: AgentProps) {
         <div>
           {aiState == AiStateSchema.enum.THINKING && (
             <img
-              className="absolute w-50 right-0 top-0"
+              className="absolute w-50 right-0 top-0 mix-blend-soft-light"
               src={thinkingBubble}
               alt="Thinking bubble"
             />
@@ -233,17 +233,17 @@ export function Agent({ isGuard = false, aiState }: AgentProps) {
     return (
       <>
         <img
-          className="absolute bottom-[12%] left-[-5%] z-1 w-[60%]"
+          className="absolute bottom-[12%] left-[-5%] z-1 w-[60%] mix-blend-soft-light"
           src={cloudM}
           alt="Medium-sized cloud"
         />
         <img
-          className="absolute bottom-[10%] right-[5%] z-1 w-[35%]"
+          className="absolute bottom-[10%] right-[5%] z-1 w-[35%] mix-blend-soft-light"
           src={cloudS}
           alt="small-sized cloud"
         />
         <img
-          className="absolute top-[15%] left-[10%] z-0 w-[35%]"
+          className="absolute top-[15%] left-[10%] z-0 w-[35%] mix-blend-soft-light"
           src={cloudS}
           alt="small-sized cloud"
         />
@@ -254,15 +254,15 @@ export function Agent({ isGuard = false, aiState }: AgentProps) {
   function displayRainyWeather() {
     return (
       <>
-        <div className="absolute bottom-[15%] -left-7 w-[60%] z-1">
+        <div className="absolute bottom-[15%] -left-7 w-[60%] z-1 mix-blend-soft-light">
           {CloudWithRaindrops(0)}
         </div>
 
-        <div className="absolute bottom-[5%] right-[5%] w-[60%] z-1">
+        <div className="absolute bottom-[5%] right-[5%] w-[60%] z-1 mix-blend-soft-light">
           {CloudWithRaindrops(RAIN_DROP_POSITIONS.length)}
         </div>
 
-        <div className="absolute top-[5%] -right-5 w-[60%] z-0">
+        <div className="absolute top-[5%] -right-5 w-[60%] z-0 mix-blend-soft-light">
           {CloudWithRaindrops(RAIN_DROP_POSITIONS.length * 2)}
         </div>
       </>
@@ -274,7 +274,7 @@ export function Agent({ isGuard = false, aiState }: AgentProps) {
       <>
         {/* Cloud */}
         <img
-          className="relative w-full z-1"
+          className="relative w-full z-1 mix-blend-soft-light"
           src={cloudM}
           alt="Medium-sized cloud"
         />
@@ -300,7 +300,7 @@ export function Agent({ isGuard = false, aiState }: AgentProps) {
             <img
               src={thunderbolt}
               alt="Thunderbolt"
-              className="absolute bottom-[-25%] left-[40%] z-0 w-[20%]"
+              className="absolute bottom-[-25%] left-[40%] z-0 w-[20%] mix-blend-soft-light"
             />
           )}
       </>
