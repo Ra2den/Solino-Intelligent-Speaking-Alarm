@@ -5,9 +5,7 @@ import {
   AlarmSessionWsMessageSchema,
 } from "../models/alarm-session-ws-message.model";
 import { alarmSessionService } from "../services/alarm-session.service";
-
-const API_BASE =
-  import.meta.env.VITE_BACKEND_IP?.trim() || "http://localhost:8000";
+import { getWsBase } from "../utils/backend-url.util";
 
 export function useAlarmSessionWebSocket() {
   const [session, setSession] = useState<AlarmSession | null>(null);
@@ -25,14 +23,7 @@ export function useAlarmSessionWebSocket() {
   }, []);
 
   useEffect(() => {
-    const rawApiBase = API_BASE.trim();
-    const normalizedBase = rawApiBase.match(/^https?:\/\//)
-      ? rawApiBase
-      : `http://${rawApiBase}`;
-
-    const backendUrl = new URL(normalizedBase);
-    const wsProtocol = backendUrl.protocol === "https:" ? "wss:" : "ws:";
-    const wsUrl = `${wsProtocol}//${backendUrl.host}/alarm-session/ws`;
+    const wsUrl = `${getWsBase()}/alarm-session/ws`;
     let ws: WebSocket | null = null;
     let shouldReconnect = true;
 

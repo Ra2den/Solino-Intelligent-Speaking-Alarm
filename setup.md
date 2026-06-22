@@ -77,6 +77,16 @@ conda activate solino
 fastapi dev api/main.py
 ```
 
+By default this binds to `127.0.0.1` (localhost only). To reach it from another
+device on the network, bind to all interfaces:
+
+```bash
+fastapi dev api/main.py --host 0.0.0.0
+```
+
+The frontend dev server needs the same treatment (`npm run dev -- --host`), and
+make sure port `8000` is open in your firewall.
+
 ### 3. Optional: start the CLI assistant
 
 This is only needed if you want to use the microphone/voice CLI directly.
