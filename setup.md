@@ -29,6 +29,16 @@ Create the file `backend/.env`:
 API_KEY=your_openweathermap_api_key_here
 ```
 
+To test without an OpenWeatherMap API key, enable mock weather data instead.
+This returns forged weather data (in the OpenWeatherMap format) for all
+`/weather/*` endpoints, with no network calls or API key required:
+
+```env
+MOCK_WEATHER=true
+```
+
+Mock weather is also enabled automatically whenever `API_KEY` is unset.
+
 ### 4. Install Ollama
 
 Install Ollama for your operating system:
