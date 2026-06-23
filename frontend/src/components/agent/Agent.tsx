@@ -1,6 +1,11 @@
-import solinoBase from "../../assets/agent/solino_base.svg";
-import molinoBase from "../../assets/agent/molino_base.svg";
-import solinoRing from "../../assets/agent/solino_ring.svg";
+import solinoBaseDay from "../../assets/agent/solino_base_day.svg";
+import solinoBaseSunrise from "../../assets/agent/solino_base_sunrise.svg";
+import solinoBaseSunset from "../../assets/agent/solino_base_sunset.svg";
+import molinoBaseNight from "../../assets/agent/molino_base_night.svg";
+
+import solinoRingDay from "../../assets/agent/solino_ring_day.svg";
+import solinoRingSunrise from "../../assets/agent/solino_ring_sunrise.svg";
+import solinoRingSunset from "../../assets/agent/solino_ring_sunset.svg";
 import expressionRaisedBrows from "../../assets/agent/expression_guard.svg";
 import sleepingEyes from "../../assets/agent/facial-expressions/eyes-sleeping.svg";
 import eyes from "../../assets/agent/facial-expressions/eyes.svg";
@@ -30,6 +35,20 @@ const RAIN_DROP_POSITIONS = [
   "absolute -bottom-9 left-[55%] z-0 w-[20%]",
   "absolute -bottom-9 left-[73%] z-0 w-[20%]",
 ] as const;
+
+const AVATAR_BASE_BY_PHASE: Record<Phase, string> = {
+  Sunrise: solinoBaseSunrise,
+  Day: solinoBaseDay,
+  Sunset: solinoBaseSunset,
+  Night: molinoBaseNight,
+};
+
+const AVATAR_RING_BY_PHASE: Partial<Record<Phase, string>> = {
+  Sunrise: solinoRingSunrise,
+  Day: solinoRingDay,
+  Sunset: solinoRingSunset,
+  // Night hat keinen Ring
+};
 
 type AgentProps = {
   aiState?: AiState;
@@ -141,27 +160,31 @@ export function Agent({ isGuard = false, aiState }: AgentProps) {
             condition === WeatherConditionSchema.enum.Thunderstorm) &&
             displayRainyWeather()}
         </div>
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 mix-blend-soft-light">
-          <img
-            className={`${phase === PhaseSchema.parse("Night") ? "hidden" : "visible"} w-130 max-w-none object-contain ${animationsEnabled ? "animate-[spin_25s_linear_infinite]" : ""}`}
-            src={solinoRing}
-            alt="Solino Ring"
-          />
-        </div>
-        <div
-          className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 mix-blend-soft-light ${phase === PhaseSchema.parse("Night") ? "w-130" : "w-90"}`}
-        >
-          <img
-            className="w-full object-contain mix-blend-soft-light"
-            src={phase === PhaseSchema.parse("Night") ? molinoBase : solinoBase}
-            alt="Solino Base"
-          />
-          {getExpression(isGuard, phase)}
-        </div>
+        {phase && AVATAR_RING_BY_PHASE[phase] && (
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
+            <img
+              className={`w-130 max-w-none object-contain ${animationsEnabled ? "animate-[spin_25s_linear_infinite]" : ""}`}
+              src={AVATAR_RING_BY_PHASE[phase]}
+              alt="Solino Ring"
+            />
+          </div>
+        )}
+        {phase && (
+          <div
+            className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 ${phase === PhaseSchema.parse("Night") ? "w-130" : "w-90"}`}
+          >
+            <img
+              className="w-full object-contain"
+              src={AVATAR_BASE_BY_PHASE[phase]}
+              alt="Solino Base"
+            />
+            {getExpression(isGuard, phase)}
+          </div>
+        )}
         <div>
           {aiState == AiStateSchema.enum.THINKING && (
             <img
-              className="absolute w-50 right-0 top-0 mix-blend-soft-light"
+              className="absolute w-50 right-0 top-0"
               src={thinkingBubble}
               alt="Thinking bubble"
             />
@@ -233,17 +256,17 @@ export function Agent({ isGuard = false, aiState }: AgentProps) {
     return (
       <>
         <img
-          className="absolute bottom-[12%] left-[-5%] z-1 w-[60%] mix-blend-soft-light"
+          className="absolute bottom-[12%] left-[-5%] z-1 w-[60%]"
           src={cloudM}
           alt="Medium-sized cloud"
         />
         <img
-          className="absolute bottom-[10%] right-[5%] z-1 w-[35%] mix-blend-soft-light"
+          className="absolute bottom-[10%] right-[5%] z-1 w-[35%]"
           src={cloudS}
           alt="small-sized cloud"
         />
         <img
-          className="absolute top-[15%] left-[10%] z-0 w-[35%] mix-blend-soft-light"
+          className="absolute top-[15%] left-[10%] z-0 w-[35%]"
           src={cloudS}
           alt="small-sized cloud"
         />
@@ -254,15 +277,15 @@ export function Agent({ isGuard = false, aiState }: AgentProps) {
   function displayRainyWeather() {
     return (
       <>
-        <div className="absolute bottom-[15%] -left-7 w-[60%] z-1 mix-blend-soft-light">
+        <div className="absolute bottom-[15%] -left-7 w-[60%] z-1">
           {CloudWithRaindrops(0)}
         </div>
 
-        <div className="absolute bottom-[5%] right-[5%] w-[60%] z-1 mix-blend-soft-light">
+        <div className="absolute bottom-[5%] right-[5%] w-[60%] z-1">
           {CloudWithRaindrops(RAIN_DROP_POSITIONS.length)}
         </div>
 
-        <div className="absolute top-[5%] -right-5 w-[60%] z-0 mix-blend-soft-light">
+        <div className="absolute top-[5%] -right-5 w-[60%] z-0">
           {CloudWithRaindrops(RAIN_DROP_POSITIONS.length * 2)}
         </div>
       </>
@@ -274,7 +297,7 @@ export function Agent({ isGuard = false, aiState }: AgentProps) {
       <>
         {/* Cloud */}
         <img
-          className="relative w-full z-1 mix-blend-soft-light"
+          className="relative w-full z-1"
           src={cloudM}
           alt="Medium-sized cloud"
         />
@@ -300,7 +323,7 @@ export function Agent({ isGuard = false, aiState }: AgentProps) {
             <img
               src={thunderbolt}
               alt="Thunderbolt"
-              className="absolute bottom-[-25%] left-[40%] z-0 w-[20%] mix-blend-soft-light"
+              className="absolute bottom-[-25%] left-[40%] z-0 w-[20%]"
             />
           )}
       </>
