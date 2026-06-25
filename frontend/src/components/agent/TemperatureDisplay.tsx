@@ -1,3 +1,5 @@
+import { usePhase } from "../../hooks/usePhase";
+
 type TemperatureDisplayProps = {
   temperature?: number;
   isLoading: boolean;
@@ -11,17 +13,32 @@ export function TemperatureDisplay({
   hasError,
   isUnavailable,
 }: TemperatureDisplayProps) {
+  const phase = usePhase();
+  const textColor = phase === "Night" ? "text-white" : "text-black";
+
   if (isLoading) {
-    return <div className="font-medium text-5xl">...</div>;
+    return <div className={`font-medium text-5xl ${textColor}`}>...</div>;
   }
 
   if (hasError) {
-    return <div className="font-medium text-2xl">Weather unavailable</div>;
+    return (
+      <div className={`font-medium text-2xl ${textColor}`}>
+        Weather unavailable
+      </div>
+    );
   }
 
   if (isUnavailable || temperature === undefined) {
-    return <div className="font-medium text-2xl">No temperature data</div>;
+    return (
+      <div className={`font-medium text-2xl ${textColor}`}>
+        No temperature data
+      </div>
+    );
   }
 
-  return <div className="font-medium text-5xl">{temperature}°C</div>;
+  return (
+    <div className={`font-medium text-5xl mix-blend-soft-light ${textColor}`}>
+      {temperature}°C
+    </div>
+  );
 }
