@@ -29,9 +29,7 @@ export async function getPhase(): Promise<Phase> {
   const isSunset = n >= ss - t && n <= ss + t;
   const isDay = n > s + t && n < ss - t;
 
-  if (isSunrise) return "Sunrise";
-  if (isSunset) return "Sunset";
-  if (isDay) return "Day";
+
   return "Night";
 }
 

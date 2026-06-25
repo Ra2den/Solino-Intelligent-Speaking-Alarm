@@ -1,11 +1,10 @@
-import solinoBaseDay from "../../assets/agent/solino_base_day.svg";
-import solinoBaseSunrise from "../../assets/agent/solino_base_sunrise.svg";
-import solinoBaseSunset from "../../assets/agent/solino_base_sunset.svg";
-import molinoBaseNight from "../../assets/agent/molino_base_night.svg";
-
-import solinoRingDay from "../../assets/agent/solino_ring_day.svg";
-import solinoRingSunrise from "../../assets/agent/solino_ring_sunrise.svg";
-import solinoRingSunset from "../../assets/agent/solino_ring_sunset.svg";
+import solinoBaseDay from "../../assets/agent/day/base.svg";
+import solinoRingDay from "../../assets/agent/day/ring.svg";
+import solinoBaseSunrise from "../../assets/agent/sunrise/base.png";
+import solinoRingSunrise from "../../assets/agent/sunrise/ring.svg";
+import solinoBaseSunset from "../../assets/agent/sunset/base.png";
+import solinoRingSunset from "../../assets/agent/sunset/ring.svg";
+import molinoBase from "../../assets/agent/night/base.png";
 import expressionRaisedBrows from "../../assets/agent/expression_guard.svg";
 import sleepingEyes from "../../assets/agent/facial-expressions/eyes-sleeping.svg";
 import eyes from "../../assets/agent/facial-expressions/eyes.svg";
@@ -40,7 +39,7 @@ const AVATAR_BASE_BY_PHASE: Record<Phase, string> = {
   Sunrise: solinoBaseSunrise,
   Day: solinoBaseDay,
   Sunset: solinoBaseSunset,
-  Night: molinoBaseNight,
+  Night: molinoBase,
 };
 
 const AVATAR_RING_BY_PHASE: Partial<Record<Phase, string>> = {
@@ -94,13 +93,10 @@ export function Agent({ isGuard = false, aiState }: AgentProps) {
 
   // Weather Conditionals
   const isRainy =
-    condition === WeatherConditionSchema.enum.Drizzle ||
-    condition === WeatherConditionSchema.enum.Rain ||
-    condition === WeatherConditionSchema.enum.Thunderstorm;
+    false
   const animationsEnabled = true;
 
-  const shouldAnimateRain =
-    animationsEnabled && !isLoading && !error && !!weatherData && isRainy;
+  const shouldAnimateRain =true
   const isWeatherUnavailable = !weatherData || !condition;
 
   useLayoutEffect(() => {
