@@ -1,8 +1,7 @@
-const API_BASE =
-  import.meta.env.VITE_BACKEND_IP?.trim() || "http://localhost:8000";
+import { getApiBase } from "../utils/backend-url.util";
 
 const request = async (path: string, options: RequestInit = {}) => {
-  const normalizedBase = API_BASE.endsWith("/") ? API_BASE.slice(0, -1) : API_BASE;
+  const normalizedBase = getApiBase();
   const normalizedPath = path.startsWith("/") ? path : `/${path}`;
   const url = `${normalizedBase}${normalizedPath}`;
   const headers = { "Content-Type": "application/json", ...options.headers };

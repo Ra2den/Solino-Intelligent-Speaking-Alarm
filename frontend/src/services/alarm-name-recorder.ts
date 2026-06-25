@@ -1,3 +1,5 @@
+import { getWsBase } from "../utils/backend-url.util";
+
 export interface TranscriptionResponse {
   transcription: string | null;
   isListening: boolean;
@@ -38,14 +40,7 @@ class AlarmNameRecorder {
       return;
     }
 
-    // Dynamically get the base URL like in api-client.ts
-    let apiBase =
-      import.meta.env.VITE_BACKEND_IP?.trim() || "http://127.0.0.1:8000";
-    apiBase = apiBase.replace("localhost", "127.0.0.1"); // Force IPv4 to prevent resolution errors
-    const normalizedBase = apiBase.endsWith("/")
-      ? apiBase.slice(0, -1)
-      : apiBase;
-    const wsBase = normalizedBase.replace(/^http/, "ws");
+    const wsBase = getWsBase();
     this.ws = new WebSocket(`${wsBase}/alarms/ws/record-name`);
 
     this.ws.onopen = () => {
