@@ -1,9 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { AiState } from "../models/assistant/ai-state.model";
 import { AiStateSchema } from "../models/assistant/ai-state.model";
-
-const API_BASE =
-  import.meta.env.VITE_BACKEND_IP?.trim() || "http://localhost:8000";
+import { getWsBase } from "../utils/backend-url.util";
 
 export function useAiStateWebSocket() {
   const [aiState, setAiState] = useState<AiState>(AiStateSchema.enum.IDLE);
@@ -11,14 +9,7 @@ export function useAiStateWebSocket() {
   const reconnectTimeoutRef = useRef<number | null>(null);
 
   useEffect(() => {
-    const rawApiBase = API_BASE.trim();
-    const normalizedBase = rawApiBase.match(/^https?:\/\//)
-      ? rawApiBase
-      : `http://${rawApiBase}`;
-
-    const backendUrl = new URL(normalizedBase);
-    const wsProtocol = backendUrl.protocol === "https:" ? "wss:" : "ws:";
-    const wsUrl = `${wsProtocol}//${backendUrl.host}/alarms/ws/ai-state`;
+    const wsUrl = `${getWsBase()}/alarms/ws/ai-state`;
     
     let ws: WebSocket | null = null;
     let shouldReconnect = true;

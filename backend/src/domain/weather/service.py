@@ -14,6 +14,11 @@ API_KEY = os.getenv("API_KEY")
 BASE_URL = 'https://api.openweathermap.org/data/2.5/'
 NO_WEATHER_ERROR_MSG = "Fehler beim Abrufen der aktuellen Wetterdaten"
 
+# When MOCK_WEATHER is truthy, or no API_KEY is configured, forged weather data
+# in the OpenWeatherMap response format is returned instead of calling the API.
+# This lets the full parsing pipeline run without a (paid) API key or network.
+MOCK_WEATHER = os.getenv("MOCK_WEATHER", "").lower() in ("1", "true", "yes") or not API_KEY
+
 WIND_DIRECTIONS = ['Norden', 'Nord-Nord-Ost', 'Nord-Ost', 'Ost-Nord-Ost', 
                    'Osten', 'Ost-Süd-Ost', 'Süd-Ost', 'Süd-Süd-Ost', 
                    'Süden', 'Süd-Süd-West', 'Süd-West', 'West-Süd-West', 
@@ -88,6 +93,9 @@ def get_cords_from_location(city, region):
     return location
 
 def get_cords_from_ip_location():
+    if MOCK_WEATHER:
+        return None
+
     location_from_ip = get_city_from_ip()
     if not location_from_ip:
         print("City not found by ip, using data from default City (Karlsruhe)")
@@ -95,9 +103,57 @@ def get_cords_from_ip_location():
 
     return get_cords_from_location(location_from_ip[CITY], location_from_ip[REGION])
 
+# --- forged weather data (used when MOCK_WEATHER is enabled) ---
+
+def _celsius_to_kelvin(deg_celsius):
+    return deg_celsius + 273.15
+
+def forge_weather_nowcast():
+    now = datetime.now()
+    midnight = now.replace(hour=0, minute=0, second=0, microsecond=0)
+    return {
+        DATE_TIME: int(now.timestamp()),
+        CITY_NAME: "Marxzell",
+        WEATHER: [{WEATHER_CONDITION: "Clouds", WEATHER_DESCRIPTION: "few clouds"}],
+        WEATHER_CONDITION: {
+            TEMPERATURE: _celsius_to_kelvin(18.0),
+            TEMPERATURE_FEELS_LIKE: _celsius_to_kelvin(17.0),
+        },
+        WIND: {WIND_SPEED: 3.5, WIND_DIRECTION: 225},
+        WEATHER_TIME: {
+            SUNRISE: int(midnight.replace(hour=5, minute=30).timestamp()),
+            SUNSET: int(midnight.replace(hour=21, minute=30).timestamp()),
+        },
+    }
+
+def forge_weather_forecast():
+    now = datetime.now()
+    conditions = [
+        ("Clear", "clear sky", 15.0),
+        ("Clouds", "few clouds", 18.0),
+        ("Clouds", "scattered clouds", 22.0),
+        ("Rain", "rain", 20.0),
+        ("Clouds", "broken clouds", 17.0),
+    ]
+    forecast_list = []
+    for i, (cond, desc, temp) in enumerate(conditions):
+        dt = int((now.timestamp())) + i * 3 * 3600
+        forecast_list.append({
+            DATE_TIME: dt,
+            WEATHER: [{WEATHER_CONDITION: cond, WEATHER_DESCRIPTION: desc}],
+            WEATHER_CONDITION: {
+                TEMPERATURE: _celsius_to_kelvin(temp),
+                TEMPERATURE_FEELS_LIKE: _celsius_to_kelvin(temp - 1.0),
+            },
+        })
+    return {CITY: {CITY_NAME: "Marxzell"}, FORECAST_LIST: forecast_list}
+
 # --- weather nowcast operations ---
 
 def fetch_weather_nowcast(cords):
+    if MOCK_WEATHER:
+        return forge_weather_nowcast()
+
     curr_weather_request_url = f"{BASE_URL}weather?lat={cords.latitude}&lon={cords.longitude}&appid={API_KEY}"
 
     response = requests.get(curr_weather_request_url)
@@ -171,6 +227,9 @@ def get_current_weather_from_specific_location(location_name, location_region):
 # --- weather forecast operations ---
 
 def fetch_weather_forecast(cords):
+    if MOCK_WEATHER:
+        return forge_weather_forecast()
+
     forecast_weather_request_url = f"{BASE_URL}forecast?lat={cords.latitude}&lon={cords.longitude}&appid={API_KEY}"
 
     response = requests.get(forecast_weather_request_url)

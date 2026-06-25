@@ -29,6 +29,16 @@ Create the file `backend/.env`:
 API_KEY=your_openweathermap_api_key_here
 ```
 
+To test without an OpenWeatherMap API key, enable mock weather data instead.
+This returns forged weather data (in the OpenWeatherMap format) for all
+`/weather/*` endpoints, with no network calls or API key required:
+
+```env
+MOCK_WEATHER=true
+```
+
+Mock weather is also enabled automatically whenever `API_KEY` is unset.
+
 ### 4. Install Ollama
 
 Install Ollama for your operating system:
@@ -76,6 +86,16 @@ cd backend/src
 conda activate solino
 fastapi dev api/main.py
 ```
+
+By default this binds to `127.0.0.1` (localhost only). To reach it from another
+device on the network, bind to all interfaces:
+
+```bash
+fastapi dev api/main.py --host 0.0.0.0
+```
+
+The frontend dev server needs the same treatment (`npm run dev -- --host`), and
+make sure port `8000` is open in your firewall.
 
 ### 3. Optional: start the CLI assistant
 

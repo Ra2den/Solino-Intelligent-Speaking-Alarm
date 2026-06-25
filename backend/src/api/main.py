@@ -1,4 +1,5 @@
 import logging
+import os
 import threading
 from contextlib import asynccontextmanager
 from api.routes import alarm_session, alarms, weather, settings
@@ -53,16 +54,25 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(lifespan=lifespan)
 
-origins = [
-    "http://localhost:5173", # TODO extract in .env
-]
+# Origins are configurable via the BACKEND_CORS_ORIGINS env var (comma-separated,
+# exact match). When it is not set we fall back to a regex that reflects any
+# origin, so the app keeps working when opened from another device on the LAN
+# (e.g. http://192.168.x.x:5173) instead of only from localhost.
+_env_origins = os.environ.get("BACKEND_CORS_ORIGINS", "").strip()
+origins = [o.strip() for o in _env_origins.split(",") if o.strip()]
+
+cors_kwargs = (
+    {"allow_origins": origins}
+    if origins
+    else {"allow_origin_regex": r"https?://.*"}
+)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+    **cors_kwargs,
 )
 
 
