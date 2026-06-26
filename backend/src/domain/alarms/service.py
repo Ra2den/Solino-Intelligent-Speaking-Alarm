@@ -87,6 +87,12 @@ def get_current_alarm_session():
     if current_session:
         return current_session
 
+    snoozed_session = alarm_sessions_repo.get_latest_snoozed_alarm_session()
+    if snoozed_session:
+        snoozed_until = snoozed_session.get("snoozed_until")
+        if snoozed_until and datetime.fromisoformat(snoozed_until) > datetime.now():
+            return snoozed_session
+
     guard_session = alarm_sessions_repo.get_latest_guard_alarm_session()
     if not guard_session:
         return None

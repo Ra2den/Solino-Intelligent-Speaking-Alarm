@@ -3,9 +3,11 @@ import type { Alarm } from "../../models/alarm/alarm.model";
 import { RecurringDays } from "./RecurringDays";
 import singleAlarmIcon from "/src/assets/alarm/icon-alarm-once.svg";
 import recurringAlarmIcon from "/src/assets/alarm/icon-alarm.svg";
+import snoozeIcon from "/src/assets/alarm/icon-snooze.svg";
 
 type AlarmCardProps = {
   alarm?: Alarm;
+  isSnoozed: boolean;
   isWidget?: boolean;
   onToggle?: () => void;
   onEdit?: () => void;
@@ -15,6 +17,7 @@ type AlarmCardProps = {
 export function AlarmCard({
   alarm,
   isWidget,
+  isSnoozed,
   onToggle,
   onEdit,
   onDelete,
@@ -193,14 +196,29 @@ export function AlarmCard({
               {/* Zeile 1: Name + Icon */}
               <div className="flex items-center justify-between w-full">
                 <span className="text-white text-[40px] font-medium truncate max-w-96">
+                  {isWidget && isSnoozed && (
+                    <div className="text-white text-3xl font-bold leading-none">
+                      Schlummern
+                    </div>
+                  )}
                   {alarm?.label}
                 </span>
-                <img
-                  src={isRecurring ? recurringAlarmIcon : singleAlarmIcon}
-                  alt=""
-                  className="w-7.5 h-7.5"
-                  aria-hidden="true"
-                />
+                {isSnoozed && (
+                  <img
+                    src={snoozeIcon}
+                    alt=""
+                    className="w-10 h-10"
+                    aria-hidden="true"
+                  />
+                )}
+                {!isSnoozed && (
+                  <img
+                    src={isRecurring ? recurringAlarmIcon : singleAlarmIcon}
+                    alt=""
+                    className="w-7.5 h-7.5"
+                    aria-hidden="true"
+                  />
+                )}
               </div>
 
               {/* Zeile 2: Time + Toggle */}
