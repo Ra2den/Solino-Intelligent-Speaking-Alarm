@@ -58,17 +58,6 @@ def stop_current_alarm_session(session_id: int):
     """
     return alarm_service.stop_ringing_session(session_id, status=AlarmSessionStatus.GUARD)
 
-@router.post("/pressure", response_model=Optional[AlarmSession])
-def pressure_sensor_event_current(body: PressureSensorEvent):
-    """Push a pressure sensor event from the Pi without knowing the session ID.
-    Looks up the current active/guard session and forwards the event to it."""
-    session = alarm_service.get_current_alarm_session()
-    logger.info("[Sensor] Pi pushed is_pressed=%s, current session=%s",
-                body.is_pressed, session["id"] if session else None)
-    if session is None:
-        return None
-    return alarm_service.handle_guard_pressure_sensor(session["id"], body.is_pressed)
-
 @router.post("/{session_id}/pressure", response_model=Optional[AlarmSession])
 def pressure_sensor_event(
     session_id: int,

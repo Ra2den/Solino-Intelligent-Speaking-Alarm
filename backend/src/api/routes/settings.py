@@ -2,7 +2,6 @@ from fastapi import APIRouter, Body, HTTPException
 from typing import Optional, List, Union
 from domain.settings import service as settings_service
 from domain.settings.schemas import SettingsKey, SettingsCategory, SettingsItem
-import domain.pi_client as pi_client
 
 router = APIRouter(prefix="/settings", tags=["Settings"])
 
@@ -25,9 +24,6 @@ def get_setting(key: SettingsKey):
 def update_setting(key: SettingsKey, value: Union[str, int, float, bool] = Body(...)):
     """Update a setting's value dynamically based on its existing category."""
     try:
-        result = settings_service.update_setting_value(key, value)
-        if key == SettingsKey.VOLUME_PERCENT:
-            pi_client.set_volume(int(value))
-        return result
+        return settings_service.update_setting_value(key, value)
     except ValueError as e:
         raise HTTPException(status_code=422, detail=str(e))
