@@ -93,10 +93,13 @@ export function Agent({ isGuard = false, aiState }: AgentProps) {
 
   // Weather Conditionals
   const isRainy =
-    false
+    condition === WeatherConditionSchema.enum.Drizzle ||
+    condition === WeatherConditionSchema.enum.Rain ||
+    condition === WeatherConditionSchema.enum.Thunderstorm;
   const animationsEnabled = true;
 
-  const shouldAnimateRain =true
+  const shouldAnimateRain =
+    animationsEnabled && !isLoading && !error && !!weatherData && isRainy;
   const isWeatherUnavailable = !weatherData || !condition;
 
   useLayoutEffect(() => {
