@@ -376,7 +376,11 @@ def stop_ringing_session(session_id: int, status=AlarmSessionStatus.DISMISSED):
 
             if is_ollama_available():
                 try:
-                    wake_up(alarm["time"], session.get("label") or alarm.get("label", ""))
+                    import threading
+                    threading.Thread(
+                        target=wake_up, 
+                        args=(alarm["time"], session.get("label") or alarm.get("label", ""))
+                    ).start()
                 except Exception:
                     logger.exception(
                         "Wake-up assistant failed for guard session %s",
