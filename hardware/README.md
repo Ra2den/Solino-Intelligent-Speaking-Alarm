@@ -1,6 +1,6 @@
 # Wecker — Hardware Setup
 
-This directory contains everything that runs on the Raspberry Pi and the Seeed XIAO nRF52840 sensor node. The Pi runs a Node.js control server that drives the LED strip, screen, and audio, and receives bed-presence data from the XIAO over BLE. The PC runs the main Solino alarm backend (`../backend/`) and delegates hardware control to the Pi.
+This directory contains everything that runs on the Raspberry Pi and the Seeed XIAO nRF52840 sensor node. The Pi runs a Node.js control server that drives the LED strip, screen, and audio, and receives bed-presence data from the XIAO over BLE. The PC runs the main Solino alarm backend and delegates hardware control to the Pi.
 
 ---
 
@@ -8,12 +8,12 @@ This directory contains everything that runs on the Raspberry Pi and the Seeed X
 
 | Component | Details |
 |-----------|---------|
-| Raspberry Pi (any model with GPIO) | Web server, LED strip, display, audio output |
-| Official Raspberry Pi DSI touchscreen | Backlight controlled via sysfs (`/sys/class/backlight/`) |
+| Raspberry Pi 3b+ (any model with GPIO) | Web server, LED strip, display, audio output |
+| Official Raspberry Pi 7 inch DSI touchscreen | Backlight controlled via sysfs (`/sys/class/backlight/`) |
 | WS2812B LED strip | 15 pixels, GRBW, data line on GPIO D21 |
 | 3.5mm speakers / USB audio | Audio output for alarm sound |
 | Seeed XIAO nRF52840 | Reads the pressure sensor, sends data to Pi over BLE |
-| SEN-09673 (Interlink 406 FSR) | Force-sensitive resistor embedded in the demo bed |
+| SEN-09673 | Force-sensitive resistor for demo purposes |
 
 ---
 
@@ -25,21 +25,9 @@ This directory contains everything that runs on the Raspberry Pi and the Seeed X
 3.3V ── FSR ── A2 (ADC)
 ```
 
-No external resistor needed. The firmware uses `INPUT_PULLDOWN` to enable the nRF52840's internal ~11 kΩ pull-down resistor.
-
-If you have a 10 kΩ resistor available, use `INPUT` mode instead and wire:
-
-```
-3.3V ── FSR ──┬── A2 (ADC)
-              │
-            10kΩ
-              │
-             GND
-```
-
 ### LED strip → Pi
 
-Connect the WS2812B data line to GPIO pin 21 (physical pin 40). The strip requires a separate 5 V power supply for more than a few pixels — do not power it from the Pi's 5 V rail.
+Connect the WS2812B data line to GPIO pin 21. A few pixel can be powered directly by the pi, but no guarantees are made. An external power supply is recommended.
 
 ---
 
@@ -192,8 +180,6 @@ arduino-cli core update-index
 arduino-cli core install Seeeduino:nrf52
 ```
 
-No extra BLE library is needed — `bluefruit.h` ships with the `Seeeduino:nrf52` board package.
-
 ### Step 1 — Calibration
 
 With `#define CALIBRATION_MODE` uncommented (the default), the firmware prints raw ADC values over USB serial so you can choose the right threshold for your sensor and mounting setup.
@@ -317,12 +303,6 @@ hardware/
 
 ## Troubleshooting
 
-**Screen writes fail with `EIO` / `EREMOTEIO`**
-The DSI backlight I2C controller rejects writes when the screen is powered off. Restore with:
-```bash
-echo 0 | sudo tee /sys/class/backlight/10-0045/bl_power
-echo 20 | sudo tee /sys/class/backlight/10-0045/brightness
-```
 Note: the backlight value range is `0–<max_brightness>` (check `cat /sys/class/backlight/*/max_brightness`), not 0–255.
 
 **BLE scanner finds sensor but can't connect**
@@ -333,18 +313,6 @@ remove <XIAO_ADDRESS>
 quit
 ```
 Then restart the scanner.
-
-**`undefined reference to HCITransport` when compiling firmware**
-This happens if `ArduinoBLE` is installed — it targets the mbed-based nRF52 core (Arduino Nano 33 BLE) and is incompatible with the Seeeduino/Adafruit nRF52 core used by the XIAO. The correct library is `bluefruit.h`, which ships with the board package. Remove ArduinoBLE if installed:
-```bash
-arduino-cli lib uninstall ArduinoBLE
-```
-
-**`python: command not found` during arduino-cli build**
-The Seeeduino board package calls `python` (not `python3`) in its post-build step. The `compile-upload.sh` script creates a local shim automatically. If running arduino-cli directly, prefix the command:
-```bash
-SHIM=$(mktemp -d) && ln -s $(which python3) $SHIM/python && PATH=$SHIM:$PATH arduino-cli compile ...
-```
 
 **Alarm sound not playing on Pi**
 - Check `ALARM_SOUND_PATH` in `config.js` matches the actual file location on the Pi
