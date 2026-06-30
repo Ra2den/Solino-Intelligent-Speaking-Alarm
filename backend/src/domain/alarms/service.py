@@ -10,6 +10,7 @@ from domain.alarms.player import alarm_player
 from domain.alarms.schemas import AlarmSession, AlarmSessionStatus, Weekday, AlarmSessionWsMessage, AlarmSessionWsType
 from domain.alarms.helper.alarm_helper import validate_weekdays
 from domain.settings import service as settings_service
+import domain.pi_client as pi_client
 
 logger = logging.getLogger(__name__)
 
@@ -178,6 +179,7 @@ def _resume_snoozed_session_if_due(current_datetime):
         clear_snoozed_until=True,
     )
     alarm_player.start_loop(session_id=current_session["id"])
+    pi_client.set_alarm_state("RINGING")
     logger.info("Snoozed alarm session %s resumed", current_session["id"])
     _broadcast_alarm_state(updated_session)
     return True
@@ -219,6 +221,7 @@ def _retrigger_guard_session_if_due(current_datetime):
         clear_snoozed_until=True,
     )
     alarm_player.start_loop(session_id=current_session["id"])
+    pi_client.set_alarm_state("RINGING")
     logger.info("Guard alarm session %s retriggered due to sustained pressure", current_session["id"])
     _broadcast_alarm_state(updated_session)
     return True
@@ -311,6 +314,7 @@ def start_ringing_sesssion(alarm):
         label=alarm["label"],
     )
     alarm_player.start_loop(session_id=current_session["id"])
+    pi_client.set_alarm_state("RINGING")
     _broadcast_alarm_state(current_session)
 
 def stop_ringing_session(session_id: int, status=AlarmSessionStatus.DISMISSED):
@@ -360,6 +364,13 @@ def stop_ringing_session(session_id: int, status=AlarmSessionStatus.DISMISSED):
 
     if should_stop_audio:
         alarm_player.stop()
+
+    if status == AlarmSessionStatus.GUARD:
+        pi_client.set_alarm_state("GUARD")
+    elif status == AlarmSessionStatus.SNOOZED:
+        pi_client.set_alarm_state("SNOOZED")
+    else:
+        pi_client.set_alarm_state("IDLE")
 
     _broadcast_alarm_state(session)
 
@@ -461,5 +472,6 @@ def handle_guard_pressure_sensor(session_id: int, pressed: bool = True):
     )
 
     alarm_player.start_loop(session_id=session_id)
+    pi_client.set_alarm_state("RINGING")
     _broadcast_alarm_state(updated_session)
     return updated_session
