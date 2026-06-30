@@ -5,7 +5,6 @@ import threading
 import time
 from pathlib import Path
 import domain.settings.service as settings_service
-import domain.pi_client as pi_client
 
 
 BACKEND_ROOT = Path(__file__).resolve().parents[3]
@@ -48,24 +47,14 @@ class AlarmPlayer:
         with self._lock:
             if self._thread and self._thread.is_alive():
                 return False
-            self._session_id = session_id
 
-        # Delegate to Pi if configured
-        if pi_client.play_alarm():
-            with self._lock:
-                self._session_id = session_id
-            return True
-
-        with self._lock:
             self._stop_event.clear()
+            self._session_id = session_id
             self._thread = threading.Thread(target=self._loop_playback, daemon=True)
             self._thread.start()
             return True
 
     def stop(self) -> None:
-        # Stop Pi-side playback if configured
-        pi_client.stop_alarm()
-
         with self._lock:
             thread = self._thread
             process = self._process
