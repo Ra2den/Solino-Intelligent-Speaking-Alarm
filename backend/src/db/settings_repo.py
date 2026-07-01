@@ -47,6 +47,10 @@ def init_default_settings():
          "value": 0.1,
          "category": SettingsCategory.GENERAL
          },
+        {"key": SettingsKey.WAKE_UP_MESSAGE_ENABLED, 
+         "value": False,
+         "category": SettingsCategory.GENERAL
+         },
     ]
     
     for setting in default_settings:

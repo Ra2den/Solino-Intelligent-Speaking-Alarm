@@ -10,6 +10,7 @@ export const SettingsKeySchema = z.enum([
   "OLLAMA_HEALTH_CHECK_TIMEOUT_SEC",
   "GUARD_MODE_TIMER_MIN",
   "GUARD_MODE_TOLERANCE_MIN",
+  "WAKE_UP_MESSAGE_ENABLED",
 ]);
 
 export const LanguageOptionSchema = z.enum(["GERMAN", "ENGLISH"]);

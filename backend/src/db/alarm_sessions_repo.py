@@ -37,6 +37,10 @@ def _ensure_alarm_sessions_columns():
 
     if "pressure_started_at" not in existing_columns:
         db.execute("ALTER TABLE alarm_sessions ADD COLUMN pressure_started_at TEXT")
+
+    if "wake_up_played" not in existing_columns:
+        db.execute("ALTER TABLE alarm_sessions ADD COLUMN wake_up_played INTEGER DEFAULT 0")
+
 def create_alarm_session(
     alarm_id: int,
     status: AlarmSessionStatus,
@@ -47,12 +51,13 @@ def create_alarm_session(
     pressure_started_at: datetime=None,
     label: str=None,
     ring_count: int=0,
+    wake_up_played: bool=False,
 ):
     session_id: int = db.execute(
         """
         INSERT INTO alarm_sessions (
-            alarm_id, status, started_at, snoozed_until, guard_expires_at, guard_tolerance_until, pressure_started_at, label, ring_count
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            alarm_id, status, started_at, snoozed_until, guard_expires_at, guard_tolerance_until, pressure_started_at, label, ring_count, wake_up_played
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """,
         (
             alarm_id,
@@ -64,6 +69,7 @@ def create_alarm_session(
             pressure_started_at,
             label,
             ring_count,
+            1 if wake_up_played else 0,
         ),
     )
     return get_alarm_session_by_id(session_id)
@@ -159,6 +165,7 @@ def update_alarm_session(
     clear_guard_expires_at=False,
     clear_guard_tolerance_until=False,
     clear_pressure_started_at=False,
+    wake_up_played: bool=None,
 ):
     fields = []
     params = []
@@ -202,6 +209,10 @@ def update_alarm_session(
     if ring_count is not None:
         fields.append("ring_count = ?")
         params.append(ring_count)
+
+    if wake_up_played is not None:
+        fields.append("wake_up_played = ?")
+        params.append(1 if wake_up_played else 0)
 
     if not fields:
         return get_alarm_session_by_id(session_id)

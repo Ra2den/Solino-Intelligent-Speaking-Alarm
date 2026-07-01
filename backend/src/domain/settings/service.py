@@ -39,6 +39,9 @@ def get_guard_mode_timer_min() -> int:
 def get_guard_mode_tolerance_min() -> float:
     return get_setting_value(SettingsKey.GUARD_MODE_TOLERANCE_MIN, 0.1)
 
+def get_wake_up_message_enabled() -> bool:
+    return get_setting_value(SettingsKey.WAKE_UP_MESSAGE_ENABLED, False)
+
 def validate_setting_value(key: SettingsKey, value: Any) -> Any:
     """Validates and coerces the value to the correct type based on the settings schema."""
     expected_type = SETTING_TYPE_MAP.get(key)

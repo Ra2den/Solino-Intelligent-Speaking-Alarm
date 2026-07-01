@@ -22,8 +22,11 @@ def test_alarm_session_flow(client, mocker):
     mocker.patch("domain.alarms.service.alarm_player.start_loop")
     mocker.patch("domain.alarms.service.alarm_player.stop")
     mock_assistant = mocker.MagicMock()
-    mock_assistant.is_ollama_available.return_value = False
     sys.modules["domain.assistant.service"] = mock_assistant
+
+    mock_utils = mocker.MagicMock()
+    mock_utils.is_ollama_available.return_value = False
+    sys.modules["domain.assistant.utils"] = mock_utils
     
     # Start a ringing session directly using service (simulate monitoring picking it up)
     from domain.alarms.service import start_ringing_sesssion
