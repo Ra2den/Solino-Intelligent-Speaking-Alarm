@@ -76,6 +76,8 @@ Before running the preview, ensure you have the following installed on your mach
     *   Verify and download missing **Piper TTS** voice models into `backend/assets/models/`.
     *   Launch the FastAPI backend server (port 8000) and the Vite frontend dev server (port 5173).
 
+    Once the services are running, open **[http://localhost:5173/](http://localhost:5173/)** in your browser to view the frontend dashboard.
+
 4.  **Try the Interactive Voice CLI**:
     To speak with the AI assistant using your microphone, restart the launcher script with the `--assistant` flag:
     ```bash

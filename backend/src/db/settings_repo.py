@@ -28,7 +28,7 @@ def init_default_settings():
          "category": SettingsCategory.GENERAL
          },
         {"key": SettingsKey.SNOOZE_DURATION_MIN, 
-         "value": 5,
+         "value": 1,
          "category": SettingsCategory.GENERAL
          },
         {"key": SettingsKey.VOLUME_PERCENT, 
@@ -44,12 +44,12 @@ def init_default_settings():
          "category": SettingsCategory.GENERAL
          },
         {"key": SettingsKey.GUARD_MODE_TOLERANCE_MIN, 
-         "value": 0.1,
-         "category": SettingsCategory.GENERAL
+          "value": 0.16666666666666666,
+          "category": SettingsCategory.GENERAL
          },
         {"key": SettingsKey.WAKE_UP_MESSAGE_ENABLED, 
-         "value": False,
-         "category": SettingsCategory.GENERAL
+          "value": False,
+          "category": SettingsCategory.GENERAL
          },
     ]
     
@@ -61,6 +61,22 @@ def init_default_settings():
                 INSERT INTO settings (key, category, value) VALUES (?, ?, ?)
                 """,
                 (setting["key"].value, setting["category"].value, str(setting["value"])),
+            )
+        elif setting["key"] == SettingsKey.GUARD_MODE_TOLERANCE_MIN and existing["value"] == 0.1:
+            # Migrate old 0.1 default to new 10s default
+            db.execute(
+                """
+                UPDATE settings SET value = ? WHERE key = ?
+                """,
+                (str(setting["value"]), SettingsKey.GUARD_MODE_TOLERANCE_MIN.value),
+            )
+        elif setting["key"] == SettingsKey.SNOOZE_DURATION_MIN and existing["value"] == 5:
+            # Migrate old 5 min default to new 1 min default
+            db.execute(
+                """
+                UPDATE settings SET value = ? WHERE key = ?
+                """,
+                (str(setting["value"]), SettingsKey.SNOOZE_DURATION_MIN.value),
             )
 
 def get_setting(key: SettingsKey):

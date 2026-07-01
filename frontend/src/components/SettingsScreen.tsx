@@ -10,7 +10,6 @@ type SettingsScreenProps = {
 
 export default function SettingsScreen({ onBack }: SettingsScreenProps) {
   const [activeTab, setActiveTab] = useState<"General" | "Advanced">("General");
-  const [isDev, setIsDev] = useState<boolean>(true);
 
   const queryClient = useQueryClient();
   const { data: settings, isLoading } = useQuery({
@@ -120,7 +119,7 @@ export default function SettingsScreen({ onBack }: SettingsScreenProps) {
       <div className="flex-1 flex flex-col justify-center">
         {activeTab === "General" ? (
           <>
-            <SettingSegmentGroup
+            {/* <SettingSegmentGroup
               label="Sprache"
               options={[
                 { label: "English", value: "ENGLISH" },
@@ -128,7 +127,7 @@ export default function SettingsScreen({ onBack }: SettingsScreenProps) {
               ]}
               currentValue={getSettingValue("LANGUAGE") as string}
               onChange={(val) => handleUpdate("LANGUAGE", val)}
-            />
+            /> */}
             <SettingSegmentGroup
               label="Lautstärke"
               options={[
@@ -165,39 +164,23 @@ export default function SettingsScreen({ onBack }: SettingsScreenProps) {
           <>
             <SettingSegmentGroup
               label="Guard Modus Dauer"
-              options={
-                isDev
-                  ? [
-                      { label: "1 min", value: 1 },
-                      { label: "10 min", value: 10 },
-                      { label: "20 min", value: 20 },
-                      { label: "30 min", value: 30 },
-                    ]
-                  : [
-                      { label: "10 min", value: 10 },
-                      { label: "20 min", value: 20 },
-                      { label: "30 min", value: 30 },
-                    ]
-              }
+              options={[
+                { label: "1 min", value: 1 },
+                { label: "10 min", value: 10 },
+                { label: "20 min", value: 20 },
+                { label: "30 min", value: 30 },
+              ]}
               currentValue={getSettingValue("GUARD_MODE_TIMER_MIN") as number}
               onChange={(val) => handleUpdate("GUARD_MODE_TIMER_MIN", val)}
             />
             <SettingSegmentGroup
               label="Guard Modus Toleranz"
-              options={
-                isDev
-                  ? [
-                      { label: "10s", value: 10 / 60 },
-                      { label: "1 min", value: 1 },
-                      { label: "2 min", value: 2 },
-                      { label: "3 min", value: 3 },
-                    ]
-                  : [
-                      { label: "1 min", value: 1 },
-                      { label: "2 min", value: 2 },
-                      { label: "3 min", value: 3 },
-                    ]
-              }
+              options={[
+                { label: "10s", value: 10 / 60 },
+                { label: "1 min", value: 1 },
+                { label: "2 min", value: 2 },
+                { label: "3 min", value: 3 },
+              ]}
               currentValue={getSettingValue("GUARD_MODE_TOLERANCE_MIN") as number}
               onChange={(val) => handleUpdate("GUARD_MODE_TOLERANCE_MIN", val)}
             />
@@ -215,15 +198,6 @@ export default function SettingsScreen({ onBack }: SettingsScreenProps) {
               onChange={(val) =>
                 handleUpdate("OLLAMA_HEALTH_CHECK_TIMEOUT_SEC", val)
               }
-            />
-            <SettingSegmentGroup
-              label="Entwickler-Modus"
-              options={[
-                { label: "An", value: true },
-                { label: "Aus", value: false },
-              ]}
-              currentValue={isDev}
-              onChange={(val) => setIsDev(val as boolean)}
             />
           </>
         )}

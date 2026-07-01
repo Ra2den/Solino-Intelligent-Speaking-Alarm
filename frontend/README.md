@@ -19,6 +19,16 @@ npm run dev
 ```
 Once started, open the local Vite URL displayed in your terminal (typically **`http://localhost:5173`**).
 
+### 3. Run unit tests
+To run frontend tests interactively via Vitest:
+```bash
+npm run test
+```
+To run the tests once and exit (CI mode):
+```bash
+npm run test -- --run
+```
+
 ---
 
 ## Production Builds

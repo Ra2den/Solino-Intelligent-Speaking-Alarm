@@ -142,6 +142,21 @@ python assistant_cli.py
 ```
 This starts wake-word monitoring. Speak the wake word (e.g., "Hey Jarvis") to activate transcription and receive verbal responses.
 
+## Running Tests
+
+Ensure your Conda environment (or `venv` virtualenv) is active, then install the developer dependencies:
+```bash
+pip install -r requirements-dev.txt
+```
+Then, run pytest from the `backend/` directory:
+```bash
+pytest
+```
+Or execute it via Python to ensure correct module path resolution:
+```bash
+python -m pytest
+```
+
 ## Notes
 
 - The alarm database file `alarms.db` is created automatically.

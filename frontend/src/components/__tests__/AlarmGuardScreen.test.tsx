@@ -1,6 +1,6 @@
 import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { AlarmGuardScreen } from '../AlarmGuardScreen';
 import { type AlarmSession, AlarmSessionStatusSchema } from '../../models/alarm-session.model';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -14,6 +14,10 @@ vi.mock('../../services/settings.service', () => ({
 
 describe('AlarmGuardScreen', () => {
   const queryClient = new QueryClient();
+
+  beforeEach(() => {
+    vi.stubEnv('VITE_HIDE_SIMULATE_PRESSURE', '');
+  });
 
   const mockSession: AlarmSession = {
     id: 1,

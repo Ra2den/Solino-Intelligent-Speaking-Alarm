@@ -28,7 +28,7 @@ def get_volume_percent() -> int:
     return get_setting_value(SettingsKey.VOLUME_PERCENT, 100)
 
 def get_snooze_duration_min() -> int:
-    return get_setting_value(SettingsKey.SNOOZE_DURATION_MIN, 5)
+    return get_setting_value(SettingsKey.SNOOZE_DURATION_MIN, 1)
 
 def get_ollama_health_check_timeout_sec() -> int:
     return get_setting_value(SettingsKey.OLLAMA_HEALTH_CHECK_TIMEOUT_SEC, 2)
@@ -37,7 +37,7 @@ def get_guard_mode_timer_min() -> int:
     return get_setting_value(SettingsKey.GUARD_MODE_TIMER_MIN, 1)
 
 def get_guard_mode_tolerance_min() -> float:
-    return get_setting_value(SettingsKey.GUARD_MODE_TOLERANCE_MIN, 0.1)
+    return get_setting_value(SettingsKey.GUARD_MODE_TOLERANCE_MIN, 0.15)
 
 def get_wake_up_message_enabled() -> bool:
     return get_setting_value(SettingsKey.WAKE_UP_MESSAGE_ENABLED, False)

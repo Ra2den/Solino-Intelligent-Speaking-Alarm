@@ -44,9 +44,9 @@ describe('SettingsScreen', () => {
       expect(screen.getByText('Einstellungen')).toBeInTheDocument();
     });
 
-    // Language setting should be visible
-    expect(screen.getByText('Sprache')).toBeInTheDocument();
-    expect(screen.getByText('English')).toBeInTheDocument();
+    // Volume setting should be visible
+    expect(screen.getByText('Lautstärke')).toBeInTheDocument();
+    expect(screen.getByText('50%')).toBeInTheDocument();
   });
 
   it('switches to advanced tab when clicked', async () => {
