@@ -181,7 +181,8 @@ def main():
                 shell=True,
                 stdout=subprocess.DEVNULL,
                 stderr=subprocess.DEVNULL,
-                cwd=project_root
+                cwd=project_root,
+                start_new_session=True
             )
             processes.append(ollama_proc)
             print(f"{Colors.BLUE}[Ollama]{Colors.ENDC} Ollama server launched in background.")
@@ -230,7 +231,8 @@ def main():
             encoding="utf-8",
             env=child_env,
             bufsize=1,
-            cwd=frontend_dir
+            cwd=frontend_dir,
+            start_new_session=True
         )
         processes.append(frontend_proc)
         if not args.assistant:
@@ -251,7 +253,8 @@ def main():
             encoding="utf-8",
             env=child_env,
             bufsize=1,
-            cwd=backend_src_dir
+            cwd=backend_src_dir,
+            start_new_session=True
         )
         processes.append(backend_proc)
         if not args.assistant:
@@ -310,7 +313,8 @@ def main():
                 # On Windows, kill the process tree to avoid orphaned CMD/Node/Python processes
                 subprocess.call(f"taskkill /F /T /PID {p.pid}", stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
             else:
-                p.terminate()
+                import signal
+                os.killpg(os.getpgid(p.pid), signal.SIGTERM)
         except Exception:
             pass
     print(f"{Colors.GREEN}Cleaned up successfully. Bye!{Colors.ENDC}")
