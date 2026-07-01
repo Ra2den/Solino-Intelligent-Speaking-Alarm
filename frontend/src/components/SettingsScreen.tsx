@@ -152,7 +152,7 @@ export default function SettingsScreen({ onBack }: SettingsScreenProps) {
               onChange={(val) => handleUpdate("SNOOZE_DURATION_MIN", val)}
             />
             <SettingSegmentGroup
-              label="KI Sprachassistent"
+              label="Morgen-Begrüßung"
               options={[
                 { label: "An", value: true },
                 { label: "Aus", value: false },
