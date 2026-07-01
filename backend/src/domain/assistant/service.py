@@ -326,12 +326,11 @@ def speak(text, input_text, on_play_audio_file: Callable[[], None] = None):
 
 
 def _play_audio_file(audio_path):
-    player = shutil.which("afplay") or shutil.which("pw-play") or shutil.which("aplay")
-    if not player:
-        raise RuntimeError("Kein Audio-Player gefunden. Erwartet wurde 'afplay', 'pw-play' oder 'apaly'.")
+    import sys
+    play_script = Path(__file__).resolve().parents[2] / "play_audio.py"
 
     completed = subprocess.run(
-        [player, str(audio_path)],
+        [sys.executable, str(play_script), str(audio_path)],
         check=False,
         capture_output=True,
         text=True,
@@ -340,7 +339,7 @@ def _play_audio_file(audio_path):
         error_output = (completed.stderr or completed.stdout).strip()
         raise RuntimeError(
             f"Audio konnte nicht abgespielt werden: {audio_path}. "
-            f"Player: {player}. Fehler: {error_output or 'Unbekannter Fehler'}"
+            f"Fehler: {error_output or 'Unbekannter Fehler'}"
         )
 
 

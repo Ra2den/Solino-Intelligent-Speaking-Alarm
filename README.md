@@ -18,10 +18,17 @@ Solino is a hybrid voice alarm system that combines speech recognition, AI inten
 
 ## Quick start
 
-1. Open a terminal in `backend/`
-2. Follow the setup steps in [`setup.md`](setup.md)
-3. Open a separate terminal in `frontend/`
-4. Start the frontend with `npm install` and `npm run dev`
+1. Perform the one-time setup steps in [`setup.md`](setup.md).
+2. Run the cross-platform startup script in the root directory:
+   ```bash
+   python start.py
+   ```
+   This will automatically start Ollama, the frontend dev server, and the FastAPI backend server, and run them concurrently.
+   
+   To start the interactive voice CLI assistant directly in your current terminal (while running the background services silently in the background), run:
+   ```bash
+   python start.py --assistant
+   ```
 
 ## Notes
 
