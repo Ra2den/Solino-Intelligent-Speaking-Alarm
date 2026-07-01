@@ -375,6 +375,7 @@ def format_decimal_to_locale(number, to_locale=None):
         formatted_number = locale.format_string("%d", int(number), grouping=True)
     else:
         formatted_number = locale.format_string("%.1f", number, grouping=True)
+
     return formatted_number
 
 def get_locale_weather_conditions(api_condition):

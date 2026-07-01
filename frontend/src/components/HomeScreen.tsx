@@ -83,7 +83,7 @@ export function HomeScreen() {
             />
           </div>
           <div className="col-span-3">
-            <Agent isGuard aiState={aiState} />
+            <Agent isGuard />
           </div>
         </div>
       );

@@ -383,7 +383,7 @@ def interact():
         trigger_backend_state(AiState.IDLE)
 
 
-def ai_output(inputs, config, input_text=""):
+def ai_output(inputs, config, input_text):
 
     print(f"INPUTS ??? : {inputs}")
 
