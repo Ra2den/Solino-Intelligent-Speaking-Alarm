@@ -68,6 +68,8 @@ PERSONALITY & TONE
 
 LOGIC & TOOL USAGE
 
+    DONT USE MARKDOWN NOTATION: This is important for the Text-To-Speech part of the Application
+
     PHONETIC CORRECTION: If the user uses words that sound similar to "alarm" (e.g., "arm," "alarmed," or contextually mispronounced terms), assume they mean "alarm" and act accordingly.
 
     TOOL DISCIPLINE: Never call a tool twice with the same parameters.
@@ -145,10 +147,13 @@ def list_all_alarms():
 @tool
 def remove_alarm_by_time(uhrzeit: str):
     """Löscht einen Wecker basierend auf der Uhrzeit (Format HH:MM)."""
-    success = alarm_service.delete_alarm_by_time(uhrzeit)
-    if success:
-        return f"Ich habe den Wecker für {uhrzeit} Uhr gelöscht."
-    return f"Ich konnte keinen Wecker für {uhrzeit} Uhr finden."
+    try:
+        success = alarm_service.delete_alarm_by_time(uhrzeit)
+        if success:
+            return f"Ich habe den Wecker für {uhrzeit} Uhr gelöscht."
+        return f"Ich konnte keinen Wecker für {uhrzeit} Uhr finden."
+    except ValueError:
+        return f"Ich konnte den Wecker für {uhrzeit} Uhr nicht löschen, da er noch aktive oder unaufgelöste Sitzungen hat."
     
 
 @tool
@@ -378,7 +383,7 @@ def interact():
         trigger_backend_state(AiState.IDLE)
 
 
-def ai_output(inputs, config, input_text):
+def ai_output(inputs, config, input_text=""):
 
     print(f"INPUTS ??? : {inputs}")
 

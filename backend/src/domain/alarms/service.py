@@ -61,6 +61,9 @@ def update_alarm(alarm_id, time=None, label=None, recurring_days=None, active=No
 
 def delete_alarm_by_id(alarm_id):
     """Delete an alarm by its numeric ID."""
+    unresolved = alarm_sessions_repo.get_unresolved_alarm_session_by_alarm_id(alarm_id)
+    if unresolved:
+        raise ValueError("Cannot delete alarm with active or unresolved sessions.")
     return alarms_repo.delete_alarm_by_id(alarm_id)
 
 
@@ -78,6 +81,11 @@ def set_last_triggered_at(alarm_id, last_triggered_at):
 
 def delete_alarm_by_time(time_value):
     """Delete an alarm by its HH:MM time value."""
+    alarm = alarms_repo.get_alarm_by_time(time_value)
+    if alarm:
+        unresolved = alarm_sessions_repo.get_unresolved_alarm_session_by_alarm_id(alarm["id"])
+        if unresolved:
+            raise ValueError("Cannot delete alarm with active or unresolved sessions.")
     return alarms_repo.delete_alarm_by_time(time_value)
 
 
