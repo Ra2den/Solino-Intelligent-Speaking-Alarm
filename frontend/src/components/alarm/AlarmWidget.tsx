@@ -5,6 +5,7 @@ import { alarmsService } from "../../services/alarms.service";
 import { toMinutes } from "../../utils/time.util";
 import { useAlarmSession } from "../../contexts/alarm-session/alarm-session.context";
 import { AlarmSessionStatusSchema } from "../../models/alarm-session.model";
+import toast from "react-hot-toast";
 
 const MINUTES_PER_DAY = 24 * 60;
 
@@ -152,11 +153,13 @@ export default function AlarmWidget({ onEdit, onDelete }: AlarmWidgetProps) {
     try {
       await alarmsService.deleteAlarm(closestAlarm.id);
       onDelete?.(closestAlarm.id);
+      toast.success("Wecker erfolgreich gelöscht.");
       await refreshClosestAlarm();
     } catch (err: unknown) {
       if (err instanceof Error) {
         console.error("AlarmWidget delete error:", err.message);
       }
+      toast.error("Wecker konnte nicht gelöscht werden, da er noch aktive Sitzungen hat.");
     }
   }
 

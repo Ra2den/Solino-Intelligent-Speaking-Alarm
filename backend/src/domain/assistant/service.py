@@ -147,10 +147,13 @@ def list_all_alarms():
 @tool
 def remove_alarm_by_time(uhrzeit: str):
     """Löscht einen Wecker basierend auf der Uhrzeit (Format HH:MM)."""
-    success = alarm_service.delete_alarm_by_time(uhrzeit)
-    if success:
-        return f"Ich habe den Wecker für {uhrzeit} Uhr gelöscht."
-    return f"Ich konnte keinen Wecker für {uhrzeit} Uhr finden."
+    try:
+        success = alarm_service.delete_alarm_by_time(uhrzeit)
+        if success:
+            return f"Ich habe den Wecker für {uhrzeit} Uhr gelöscht."
+        return f"Ich konnte keinen Wecker für {uhrzeit} Uhr finden."
+    except ValueError:
+        return f"Ich konnte den Wecker für {uhrzeit} Uhr nicht löschen, da er noch aktive oder unaufgelöste Sitzungen hat."
     
 
 @tool

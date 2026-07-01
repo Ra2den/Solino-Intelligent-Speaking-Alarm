@@ -4,6 +4,7 @@ import { AlarmCard } from "./AlarmCard";
 import backIcon from "/src/assets/alarm/icon-back.svg";
 import { alarmsService } from "../../services/alarms.service";
 import alarmAddIcon from "../../assets/alarm/icon-alarmAddBtn.svg";
+import toast from "react-hot-toast";
 
 type AlarmListProps = {
   onBack: () => void;
@@ -87,11 +88,13 @@ export function AlarmList({ onBack, onCreate, onEdit, onDelete }: AlarmListProps
       setAlarms((currentAlarms) =>
         currentAlarms.filter((alarm) => alarm.id !== alarmId),
       );
+      toast.success("Wecker erfolgreich gelöscht.");
       onDelete?.(alarmId);
     } catch (err: unknown) {
       if (err instanceof Error) {
         console.error("alarms.deleteAlarm error:", err.message);
       }
+      toast.error("Wecker konnte nicht gelöscht werden, da er noch aktive Sitzungen hat.");
     }
   }
 }

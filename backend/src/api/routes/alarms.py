@@ -100,7 +100,11 @@ def delete_alarm(alarm_id: int):
         :return: The deleted alarm or None if it does not exist
         :rtype: Optional[Alarm]
     """
-    return alarms_service.delete_alarm_by_id(alarm_id)
+    from fastapi import HTTPException
+    try:
+        return alarms_service.delete_alarm_by_id(alarm_id)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
 
 # --- WebSocket für die Audio-Namensaufnahme ---

@@ -16,8 +16,7 @@ def create_alarm_sessions_table():
             guard_tolerance_until TEXT,
             pressure_started_at TEXT,
             label TEXT,
-            ring_count INTEGER DEFAULT 0,
-            FOREIGN KEY (alarm_id) REFERENCES alarms (id)
+            ring_count INTEGER DEFAULT 0
         )
         """
     )
