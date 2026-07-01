@@ -1,41 +1,46 @@
-# Frontend
+# Solino — Frontend Dashboard
 
-This folder contains the React + TypeScript + Vite user interface for Solino.
+This folder contains the React + TypeScript + Vite user interface for Solino. It connects to the FastAPI backend to visualize alarm states, trigger events, and manage settings.
 
-## What it is
+---
 
-The frontend is a lightweight web app built with React, TypeScript, and Vite. It is intended to visualize the intelligent speaking alarm and communicate with the backend.
+## Development Setup
 
-## Setup
+From the `frontend/` folder, perform the following steps to run the dashboard:
 
-From the `frontend/` folder:
-
+### 1. Install dependencies
 ```bash
 npm install
 ```
 
-## Run locally
-
+### 2. Run the development server
 ```bash
 npm run dev
 ```
+Once started, open the local Vite URL displayed in your terminal (typically **`http://localhost:5173`**).
 
-Then open the local Vite URL shown in the terminal.
+---
 
-## Build for production
+## Production Builds
 
-```bash
-npm run build
-```
+To package or preview the production build locally:
 
-## Preview a production build
+*   **Build for production**:
+    ```bash
+    npm run build
+    ```
+*   **Preview the production build**:
+    ```bash
+    npm run preview
+    ```
 
-```bash
-npm run preview
-```
+---
 
-## Notes
+## Tech Stack Details
 
-- The app is configured with Vite and ESLint
-- React 19 and TypeScript 6 are used in this project
-- The UI currently serves as the frontend for the backend alarm experience
+*   **Vite**: Next-generation frontend tooling.
+*   **React 19 & TypeScript 6**: Core UI library and programming language.
+*   **TailwindCSS v4**: CSS framework for modern utility-first styling.
+*   **GSAP (GreenSock Animation Platform)**: Handles premium, fluid micro-animations and transition states.
+*   **TanStack React Query**: Manages server-state synchronization and cache polling.
+*   **Vitest & React Testing Library**: Test runner and validation environment for UI verification.

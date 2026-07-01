@@ -50,11 +50,87 @@ def is_model_downloaded(model_name):
                     return True
     except Exception:
         pass
-    return False
+def get_env_commands(project_root):
+    """
+    Detects the best way to execute Python, FastAPI and npm commands.
+    Returns: (python_cmd_list, fastapi_cmd_str, frontend_cmd_str, env_name)
+    """
+    # 1. Check if running inside an already activated environment (venv or conda)
+    # sys.prefix != sys.base_prefix is True inside a standard virtualenv.
+    # CONDA_DEFAULT_ENV is set inside active Conda environments.
+    is_venv = (sys.prefix != sys.base_prefix)
+    is_conda = 'CONDA_DEFAULT_ENV' in os.environ or 'CONDA_PREFIX' in os.environ
+    
+    if is_venv or is_conda:
+        env_name = os.environ.get('CONDA_DEFAULT_ENV') or os.path.basename(sys.prefix)
+        print(f"Detected active environment: {Colors.GREEN}{env_name}{Colors.ENDC}")
+        
+        # FastAPI might be installed in the active environment's Scripts/bin folder
+        fastapi_bin = "fastapi"
+        bindir = os.path.dirname(sys.executable)
+        fastapi_exe = os.path.join(bindir, "fastapi.exe" if sys.platform == "win32" else "fastapi")
+        if os.path.exists(fastapi_exe):
+            fastapi_bin = f'"{fastapi_exe}"'
+            
+        return [sys.executable], fastapi_bin, "npm run dev", env_name
+
+    # 2. Check for local venv or .venv folder in backend directory
+    for venv_dir in ["venv", ".venv"]:
+        venv_path = os.path.join(project_root, "backend", venv_dir)
+        if os.path.isdir(venv_path):
+            if sys.platform == "win32":
+                python_exe = os.path.join(venv_path, "Scripts", "python.exe")
+                fastapi_exe = os.path.join(venv_path, "Scripts", "fastapi.exe")
+            else:
+                python_exe = os.path.join(venv_path, "bin", "python")
+                fastapi_exe = os.path.join(venv_path, "bin", "fastapi")
+                
+            if os.path.exists(python_exe):
+                print(f"Detected local virtual environment at: {Colors.GREEN}backend/{venv_dir}{Colors.ENDC}")
+                fastapi_bin = f'"{fastapi_exe}"' if os.path.exists(fastapi_exe) else "fastapi"
+                return [python_exe], fastapi_bin, "npm run dev", f"backend/{venv_dir}"
+
+    # 3. Check if conda exists and solino environment exists
+    import shutil
+    if shutil.which("conda"):
+        print(f"Detected conda in path. Attempting to run via conda environment '{Colors.GREEN}solino{Colors.ENDC}'...")
+        return ["conda", "run", "-n", "solino", "python"], "conda run -n solino fastapi", "conda run -n solino npm run dev", "conda:solino"
+
+    print(f"{Colors.YELLOW}Warning: No activated environment or local backend/venv detected. Running commands globally.{Colors.ENDC}")
+    return [sys.executable], "fastapi", "npm run dev", "global"
+
+def check_and_download_piper_models(project_root):
+    models_dir = os.path.join(project_root, "backend", "assets", "models")
+    os.makedirs(models_dir, exist_ok=True)
+    
+    files_to_download = {
+        "de_DE-thorsten-high.onnx": "https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/de/de_DE/thorsten/high/de_DE-thorsten-high.onnx?download=true",
+        "de_DE-thorsten-high.onnx.json": "https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/de/de_DE/thorsten/high/de_DE-thorsten-high.onnx.json?download=true",
+        "de_DE-kerstin-low.onnx": "https://huggingface.co/rhasspy/piper-voices/resolve/main/de/de_DE/kerstin/low/de_DE-kerstin-low.onnx?download=true",
+        "de_DE-kerstin-low.onnx.json": "https://huggingface.co/rhasspy/piper-voices/resolve/main/de/de_DE/kerstin/low/de_DE-kerstin-low.onnx.json?download=true"
+    }
+    
+    import urllib.request
+    
+    for filename, url in files_to_download.items():
+        filepath = os.path.join(models_dir, filename)
+        if not os.path.exists(filepath):
+            print(f"{Colors.BLUE}[TTS Models]{Colors.ENDC} Downloading {filename}...")
+            try:
+                # Basic progress reporter
+                def progress_hook(count, block_size, total_size):
+                    percent = int(count * block_size * 100 / total_size)
+                    sys.stdout.write(f"\rDownloading: {percent}%")
+                    sys.stdout.flush()
+                
+                urllib.request.urlretrieve(url, filepath, reporthook=progress_hook)
+                print(f"\n{Colors.GREEN}[TTS Models]{Colors.ENDC} Successfully downloaded {filename}")
+            except Exception as e:
+                print(f"\n{Colors.RED}[TTS Models] Failed to download {filename}: {e}{Colors.ENDC}")
 
 def main():
     import argparse
-    parser = argparse.ArgumentParser(description="Solino Control Hub (Cross-Platform)")
+    parser = argparse.ArgumentParser(description="Solino Launcher (Cross-Platform)")
     parser.add_argument("--assistant", action="store_true", help="Launch the interactive voice assistant in the foreground and suppress background logs.")
     args = parser.parse_args()
 
@@ -68,12 +144,21 @@ def main():
     if hasattr(sys.stderr, 'reconfigure'):
         sys.stderr.reconfigure(encoding='utf-8')
 
-    print(f"{Colors.HEADER}=== Solino Control Hub (Cross-Platform) ==={Colors.ENDC}")
+    print(f"{Colors.HEADER}=== Solino Launcher (Cross-Platform) ==={Colors.ENDC}")
     
     # Get project root directory
     project_root = os.path.dirname(os.path.abspath(__file__))
+    python_cmd_list, fastapi_cmd_str, frontend_cmd_str, env_name = get_env_commands(project_root)
+    
+    # Auto-download Piper voice models if missing
+    check_and_download_piper_models(project_root)
     
     processes = []
+    
+    # Configure child environments to prevent emoji encoding crashes on Windows standard terminal (CP1252)
+    child_env = os.environ.copy()
+    child_env["PYTHONIOENCODING"] = "utf-8"
+    child_env["PYTHONUTF8"] = "1"
     
     # 1. Start Ollama if not running
     print(f"{Colors.BLUE}[Ollama]{Colors.ENDC} Checking Ollama status...")
@@ -137,11 +222,13 @@ def main():
     frontend_dir = os.path.join(project_root, "frontend")
     try:
         frontend_proc = subprocess.Popen(
-            "conda run -n solino npm run dev",
+            frontend_cmd_str,
             shell=True,
             stdout=subprocess.DEVNULL if args.assistant else subprocess.PIPE,
             stderr=subprocess.DEVNULL if args.assistant else subprocess.STDOUT,
             text=True,
+            encoding="utf-8",
+            env=child_env,
             bufsize=1,
             cwd=frontend_dir
         )
@@ -155,13 +242,14 @@ def main():
     print(f"{Colors.GREEN}[Backend]{Colors.ENDC} Starting FastAPI dev server...")
     backend_src_dir = os.path.join(project_root, "backend", "src")
     try:
-        # Use conda run to run inside the solino environment
         backend_proc = subprocess.Popen(
-            "conda run -n solino fastapi dev api/main.py",
+            f"{fastapi_cmd_str} dev api/main.py",
             shell=True,
             stdout=subprocess.DEVNULL if args.assistant else subprocess.PIPE,
             stderr=subprocess.DEVNULL if args.assistant else subprocess.STDOUT,
             text=True,
+            encoding="utf-8",
+            env=child_env,
             bufsize=1,
             cwd=backend_src_dir
         )
@@ -176,7 +264,8 @@ def main():
         try:
             # Run the CLI assistant in the foreground
             cli_proc = subprocess.Popen(
-                [sys.executable, "assistant_cli.py"],
+                python_cmd_list + ["assistant_cli.py"],
+                env=child_env,
                 cwd=backend_src_dir
             )
             

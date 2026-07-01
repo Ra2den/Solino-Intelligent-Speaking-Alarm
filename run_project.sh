@@ -6,7 +6,7 @@ YELLOW='\033[033m'
 RED='\033[031m'
 NC='\033[0m' # No Color
 
-echo -e "${YELLOW}=== Solino Intelligent Speaking Alarm Control Hub (venv Edition) ===${NC}"
+echo -e "${YELLOW}=== Solino Intelligent Speaking Alarm Launcher (venv Edition) ===${NC}"
 echo "1) Erstmaliges Setup ausführen (Installation & Downloads)"
 echo "2) Projekt starten (FastAPI, Frontend, Ollama & CLI)"
 read -p "Wähle eine Option (1-2): " OPTION
