@@ -42,6 +42,7 @@ class AlarmSession(BaseModel):
     label: str | None = None
     ring_count: int = 0
     message: str | None = None
+    wake_up_played: bool = False
 
 class TranscriptionResponse(BaseModel):
     transcription: Optional[str] = None

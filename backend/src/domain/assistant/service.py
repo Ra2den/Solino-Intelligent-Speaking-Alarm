@@ -264,6 +264,9 @@ app = workflow.compile(checkpointer=memory)
 
 config = {"configurable": {"thread_id": "haupt_user_session"}}
 
+_cached_voice_prompt = None
+_cached_audio_mtime = 0
+
 def speak(text, input_text, on_play_audio_file: Callable[[], None] = None):
     voice_setting = settings_service.get_voice()
     #print(f"Generiere Audio für: {text}...")
@@ -290,13 +293,27 @@ def speak(text, input_text, on_play_audio_file: Callable[[], None] = None):
             check=True,
         )
     else:
-        ref_waveform, ref_sr = sf.read(INPUT_AUDIO_PATH)
+        global _cached_voice_prompt, _cached_audio_mtime
+        current_mtime = INPUT_AUDIO_PATH.stat().st_mtime
+        
+        if _cached_voice_prompt is None or current_mtime != _cached_audio_mtime:
+            print("Erstelle Voice Clone Prompt (wird gecached)...")
+            ref_t = input_text
+            if not ref_t:
+                # Transcribe using our already-loaded Whisper model to prevent OmniVoice from downloading its own
+                print("Transkribiere Referenz-Audio...")
+                ref_t = stt_service.transcribe(str(INPUT_AUDIO_PATH))
+
+            _cached_voice_prompt = tts_model.create_voice_clone_prompt(
+                ref_audio=str(INPUT_AUDIO_PATH),
+                ref_text=ref_t if ref_t else ""
+            )
+            _cached_audio_mtime = current_mtime
 
         print("Generiere Audio (Voice Clone)...")
         audio = tts_model.generate(
             text=text,
-            ref_audio=(ref_waveform, ref_sr),
-            ref_text=input_text, 
+            voice_clone_prompt=_cached_voice_prompt
         )
 
         sf.write(RESPONSE_WAV_PATH, audio[0], 24000)
@@ -326,17 +343,7 @@ def _play_audio_file(audio_path):
             f"Player: {player}. Fehler: {error_output or 'Unbekannter Fehler'}"
         )
 
-def is_ollama_available():
-    """Check if Ollama service is available and accessible."""
-    try:
-        timeout_sec = settings_service.get_ollama_health_check_timeout_sec()
-        response = requests.get(
-            f"{OLLAMA_BASE_URL}/api/tags",
-            timeout=timeout_sec
-        )
-        return response.status_code == 200
-    except (requests.ConnectionError, requests.Timeout, Exception):
-        return False
+
 
 def wake_up(time, alarm_label=""):
     print(f"!!! ALARM !!! Es ist {time} Uhr!")

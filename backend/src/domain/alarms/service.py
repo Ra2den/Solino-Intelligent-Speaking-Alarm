@@ -373,17 +373,23 @@ def stop_ringing_session(session_id: int, status=AlarmSessionStatus.DISMISSED):
 
     if (
         status == AlarmSessionStatus.GUARD
-        and existing_session.get("status") != AlarmSessionStatus.GUARD
+        and not existing_session.get("wake_up_played")
         and session
+        and settings_service.get_wake_up_message_enabled()
     ):
+        # Update the session to mark wake_up as played
+        alarm_sessions_repo.update_alarm_session(session_id, wake_up_played=True)
+        session["wake_up_played"] = True
+
         # Trigger the morning assistant only when the user first dismisses the
         # ringing alarm into guard mode. Guard expiration must not replay it.
         alarm = alarms_repo.get_alarm_by_id(session["alarm_id"])
         if alarm:
-            from domain.assistant.service import wake_up, is_ollama_available
+            from domain.assistant.utils import is_ollama_available
 
             if is_ollama_available():
                 try:
+                    from domain.assistant.service import wake_up
                     import threading
                     threading.Thread(
                         target=wake_up, 

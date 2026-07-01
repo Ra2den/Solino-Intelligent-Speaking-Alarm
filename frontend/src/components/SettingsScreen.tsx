@@ -151,6 +151,15 @@ export default function SettingsScreen({ onBack }: SettingsScreenProps) {
               currentValue={getSettingValue("SNOOZE_DURATION_MIN") as number}
               onChange={(val) => handleUpdate("SNOOZE_DURATION_MIN", val)}
             />
+            <SettingSegmentGroup
+              label="KI Sprachassistent"
+              options={[
+                { label: "An", value: true },
+                { label: "Aus", value: false },
+              ]}
+              currentValue={getSettingValue("WAKE_UP_MESSAGE_ENABLED") as boolean}
+              onChange={(val) => handleUpdate("WAKE_UP_MESSAGE_ENABLED", val)}
+            />
           </>
         ) : (
           <>
