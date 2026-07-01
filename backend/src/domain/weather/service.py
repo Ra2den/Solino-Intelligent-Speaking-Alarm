@@ -3,6 +3,7 @@ import json
 import math
 import locale
 import os
+import platform
 
 from datetime import datetime, timezone
 from dotenv import load_dotenv
@@ -351,10 +352,30 @@ def deg_to_compass(deg):
 def round_half_up(n):
     return math.floor(n * 10 + 0.5) / 10
 
-def format_decimal_to_locale(number, to_locale="de_DE.utf8"):
+def format_decimal_to_locale(number, to_locale=None):
+    if to_locale is None:
+        if platform.system() == "Darwin": 
+            to_locale = "de_DE.UTF-8"
+        else:
+            to_locale = "de_DE.utf8"
+
+    try:
+        locale.setlocale(locale.LC_NUMERIC, to_locale)
+    except locale.Error:
+        try:
+            alternative = "de_DE.utf8" if "UTF-8" in to_locale else "de_DE.UTF-8"
+            locale.setlocale(locale.LC_NUMERIC, alternative)
+        except locale.Error:
+            try:
+                locale.setlocale(locale.LC_NUMERIC, "de_DE")
+            except locale.Error:
+                print(f"Locale {to_locale} konnte nicht gesetzt werden. Nutze System-Standard.")
+
     if number == int(number):
-        return str(int(number))
-    return f"{number:.1f}".replace(".", ",")
+        formatted_number = locale.format_string("%d", int(number), grouping=True)
+    else:
+        formatted_number = locale.format_string("%.1f", number, grouping=True)
+    return formatted_number
 
 def get_locale_weather_conditions(api_condition):
     return API_WEATHER_CONDITIONS_ENUM.get(api_condition, api_condition)

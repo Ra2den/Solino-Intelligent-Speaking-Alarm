@@ -59,6 +59,7 @@ export function AlarmList({ onBack, onCreate, onEdit, onDelete }: AlarmListProps
               <AlarmCard
                 alarm={alarm}
                 isWidget={false}
+                isSnoozed={false}
                 onToggle={() => handleToggleAlarm(alarm.id)}
                 onEdit={() => onEdit?.(alarm)}
                 onDelete={() => handleDeleteAlarm(alarm.id)}
