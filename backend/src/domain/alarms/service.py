@@ -327,7 +327,7 @@ def stop_ringing_session(session_id: int, status=AlarmSessionStatus.DISMISSED):
     
     - Stops the audio player if the session is currently playing.
     - Sets expiration/tolerance timers based on the target status (e.g., 5 min for SNOOZED, GUARD_EXPIRES_SECONDS for GUARD).
-    - Triggers the Ollama morning assistant (`wake_up`) if the session is fully DISMISSED.
+    - Triggers the Ollama morning assistant (`wake_up`) when the session first enters GUARD.
     - Broadcasts the updated state to connected WebSocket clients.
     """
     existing_session = alarm_sessions_repo.get_alarm_session_by_id(session_id)
@@ -371,24 +371,32 @@ def stop_ringing_session(session_id: int, status=AlarmSessionStatus.DISMISSED):
 
     _broadcast_alarm_state(session)
 
-    if status == AlarmSessionStatus.DISMISSED and session:
-        # When the alarm is fully dismissed (either manually or after the guard timer expires),
-        # trigger the morning assistant to provide a briefing.
+    if (
+        status == AlarmSessionStatus.GUARD
+        and existing_session.get("status") != AlarmSessionStatus.GUARD
+        and session
+    ):
+        # Trigger the morning assistant only when the user first dismisses the
+        # ringing alarm into guard mode. Guard expiration must not replay it.
         alarm = alarms_repo.get_alarm_by_id(session["alarm_id"])
         if alarm:
             from domain.assistant.service import wake_up, is_ollama_available
 
             if is_ollama_available():
                 try:
-                    wake_up(alarm["time"], session.get("label") or alarm.get("label", ""))
+                    import threading
+                    threading.Thread(
+                        target=wake_up, 
+                        args=(alarm["time"], session.get("label") or alarm.get("label", ""))
+                    ).start()
                 except Exception:
                     logger.exception(
-                        "Wake-up assistant failed for dismissed session %s",
+                        "Wake-up assistant failed for guard session %s",
                         session_id,
                     )
             else:
                 logger.warning(
-                    "Ollama service is not available. Skipping wake-up assistant for dismissed session %s",
+                    "Ollama service is not available. Skipping wake-up assistant for guard session %s",
                     session_id,
                 )
         else:
