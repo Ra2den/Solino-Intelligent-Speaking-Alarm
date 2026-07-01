@@ -243,7 +243,7 @@ def main():
     backend_src_dir = os.path.join(project_root, "backend", "src")
     try:
         backend_proc = subprocess.Popen(
-            f"{fastapi_cmd_str} dev api/main.py",
+            f"{fastapi_cmd_str} dev api/main.py --host 0.0.0.0",
             shell=True,
             stdout=subprocess.DEVNULL if args.assistant else subprocess.PIPE,
             stderr=subprocess.DEVNULL if args.assistant else subprocess.STDOUT,
