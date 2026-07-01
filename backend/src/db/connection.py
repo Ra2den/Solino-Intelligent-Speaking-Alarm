@@ -1,7 +1,18 @@
 import sqlite3
+import datetime
 from contextlib import contextmanager
 from pathlib import Path
 
+# Register adapter for datetime objects to silence Python 3.12 deprecation warning
+def adapt_datetime_iso(val):
+    return val.isoformat()
+
+sqlite3.register_adapter(datetime.datetime, adapt_datetime_iso)
+
+def convert_datetime(val):
+    return datetime.datetime.fromisoformat(val.decode())
+
+sqlite3.register_converter("timestamp", convert_datetime)
 
 BACKEND_ROOT = Path(__file__).resolve().parents[2]
 DB_PATH = BACKEND_ROOT / "data" / "alarms.db"
@@ -15,7 +26,7 @@ class Database:
 
     @contextmanager
     def connect(self):
-        conn = sqlite3.connect(self.db_path)
+        conn = sqlite3.connect(self.db_path, detect_types=sqlite3.PARSE_DECLTYPES | sqlite3.PARSE_COLNAMES)
         conn.row_factory = sqlite3.Row
         conn.execute("PRAGMA foreign_keys = ON")
         try:
