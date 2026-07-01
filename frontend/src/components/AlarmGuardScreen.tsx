@@ -149,22 +149,24 @@ export function AlarmGuardScreen({
         </div>
 
         {/* Sensor-Button */}
-        <div className="flex flex-col gap-1">
-          <div className="flex gap-4 w-full">
-            <button
-              onClick={() =>
-                onPressureStart(
-                  session.pressure_started_at === null ? true : false,
-                )
-              }
-              className="flex-1 h-20 rounded-full bg-white text-black text-[32px] font-medium transition-opacity duration-300 hover:opacity-80"
-            >
-              {session.pressure_started_at === null
-                ? "Sensor betätigen"
-                : "Sensor loslassen"}
-            </button>
+        {!import.meta.env.VITE_HIDE_SIMULATE_PRESSURE && (
+          <div className="flex flex-col gap-1">
+            <div className="flex gap-4 w-full">
+              <button
+                onClick={() =>
+                  onPressureStart(
+                    session.pressure_started_at === null ? true : false,
+                  )
+                }
+                className="flex-1 h-20 rounded-full bg-white text-black text-[32px] font-medium transition-opacity duration-300 hover:opacity-80"
+              >
+                {session.pressure_started_at === null
+                  ? "Sensor betätigen"
+                  : "Sensor loslassen"}
+              </button>
+            </div>
           </div>
-        </div>
+        )}
       </div>
     </div>
   );
