@@ -10,6 +10,7 @@ from domain.alarms.player import alarm_player
 from domain.alarms.schemas import AlarmSession, AlarmSessionStatus, Weekday, AlarmSessionWsMessage, AlarmSessionWsType
 from domain.alarms.helper.alarm_helper import validate_weekdays
 from domain.settings import service as settings_service
+import domain.pi_client as pi_client
 
 logger = logging.getLogger(__name__)
 
@@ -319,6 +320,7 @@ def start_ringing_sesssion(alarm):
         label=alarm["label"],
     )
     alarm_player.start_loop(session_id=current_session["id"])
+    pi_client.set_alarm_state("RINGING")
     _broadcast_alarm_state(current_session)
 
 def stop_ringing_session(session_id: int, status=AlarmSessionStatus.DISMISSED):
@@ -368,6 +370,13 @@ def stop_ringing_session(session_id: int, status=AlarmSessionStatus.DISMISSED):
 
     if should_stop_audio:
         alarm_player.stop()
+
+    if status == AlarmSessionStatus.GUARD:
+        pi_client.set_alarm_state("GUARD")
+    elif status == AlarmSessionStatus.SNOOZED:
+        pi_client.set_alarm_state("SNOOZED")
+    else:
+        pi_client.set_alarm_state("IDLE")
 
     _broadcast_alarm_state(session)
 

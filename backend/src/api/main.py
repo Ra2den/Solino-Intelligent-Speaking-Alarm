@@ -25,6 +25,15 @@ def _run_alarm_monitor():
         logger.exception("Alarm monitor thread stopped unexpectedly")
 
 
+def _preload_assistant():
+    """Import assistant.service at startup so the TTS model loads before the first alarm dismissal."""
+    try:
+        import domain.assistant.service  # noqa: F401 — triggers OmniVoice + STT model load
+        logger.info("Assistant model preloaded")
+    except Exception:
+        logger.exception("Failed to preload assistant model")
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """
@@ -48,6 +57,8 @@ async def lifespan(app: FastAPI):
         )
         app.state.monitor_thread.start()
         logger.info("Alarm monitor thread started")
+
+    threading.Thread(target=_preload_assistant, name="assistant-preload", daemon=True).start()
 
     yield
 
